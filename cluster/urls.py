@@ -6,4 +6,6 @@ from cluster import views
 
 urlpatterns = patterns('',
                        url(r'^$', views.upload, name='upload'),
-                       url(r'^cluster/(?P<sessionKey>.*)/', views.cluster, name='cluster'))
+                       url(r'^cluster', views.cluster, name='cluster'),
+                       url(r'^executeclustering', views.executeClustering, name='executeclustering'),
+                       url(r'^getdata', views.getData, name='getdata'))

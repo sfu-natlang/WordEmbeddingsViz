@@ -1,10 +1,60 @@
-<!DOCTYPE html>
 <html>
-<head lang="en">
-    <meta charset="UTF-8">
-    <title></title>
+<head>
+    {% load static %}
+    <script type="text/javascript" src="{% static 'js/jquery-1.11.2.js' %}"></script>
 </head>
 <body>
+
+<script type="text/javascript">
+    $(document).ready(function() {
+
+        // The func that calls getCount
+        function pull() {
+            // I use $.ajax. getJSON seems to cache the last data on ie6. Firefox work tho.
+
+            $.ajax ({
+                type: "GET",
+                url: "{% url 'getdata' %}",
+                dataType: "json",
+                cache: false, //VITAL line: the getJON func does not prevent caching!
+                success: updater //Call this func when we have some data
+            })
+        }
+
+        // Func to use the data fetched
+        function updater( data, success ) {
+            if (data) {
+                // If done flag sent, say so.
+                if (data.done) {
+                    txt = "DONE";
+                } else {
+                    // We are busy, get the count and...
+                    txt = data.timeElapsed;
+                    // set this to start again in 2 seconds:
+                    window.setTimeout( pull, 2000 );
+                }
+                // Display out count/message
+                $('#msg').text( "SETTING TO:" + txt );
+            }
+        } //end updater
+
+        // You can start it automagically like this:
+        //$('#muffin').load("{% url 'executeclustering' %}");
+
+        //Or with an anchor
+        $("#go").click(function() {
+            $(this).hide(); // Hide the anchor
+            // Call doit func in Django view
+            $('#muffin').load("{% url 'executeclustering' %}");
+            // Start the pull function in 1 second:
+            window.setTimeout( pull, 1000);
+        });
+    }); //end ready
+</script>
+
+<a id="go" href="#">Start</a>
+<div id="muffin">DARN</div>
+<div id="msg" style="border:1px solid red;">NUMBER</div>
 
 </body>
 </html>

@@ -1,5 +1,4 @@
-import os
-
+import os, threading, time, json
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
@@ -37,7 +36,7 @@ def upload(request):
             lang2WordsFile = request.FILES['lang2WordsFile']
             saveUploadedFile(lang2WordsFile, 'LANG2WORDS', request.session.session_key)
 
-            return HttpResponseRedirect('/cluster/'+request.session.session_key)
+            return HttpResponseRedirect('/cluster')
     else:
         form = UploadForm()
 
@@ -45,24 +44,84 @@ def upload(request):
                               context_instance=RequestContext(request))
 
 
-def cluster(request, sessionKey):
+def cluster(request):
+    print request.session.session_key
+    request.session['done'] = False
+    request.session['timeElapsed'] = 0
+    request.session.modified = True
+    return render_to_response('cluster.html')
+
+
+def executeClustering(request):
+    print "In ExecuteClustering"
+    startTime = time.time()
+    clusterThread = tsneThread("tsneThread-"+request.session.session_key, request.session.session_key)
+    clusterThread.start()
+    while True:
+        time.sleep(2)
+        if clusterThread.isAlive():
+            request.session['timeElapsed'] = time.time() - startTime
+            print request.session['timeElapsed']
+        else:
+            request.session['done'] = True
+            request.session['words'] = clusterThread.words
+            request.session['coordinates'] = clusterThread.coordinates
+    return HttpResponse('Done', mimetype='text/plain')
+
+
+def getData(request):
+    print "In GetData"
+    timeElapsed = request.session.get('timeElapsed', 0)
+    isItDone = request.session.get('done', False)
+    if isItDone:
+        words = request.session.get('words', None)
+        coordinates = request.session.get('coordinates', None)
+        result = {}
+        for i, (word, coordinate) in enumerate(zip(words, coordinates)):
+            result[i] = {'x':coordinate[0], 'y': coordinate[1], 'word': word}
+        result['done'] = True
+        jsonStr = json.dumps(result)
+        return HttpResponse(jsonStr, mimetype='application/javascript')
+    else:
+        result = {'done': False, 'timeElapsed': timeElapsed}
+        jsonStr = json.dumps(result)
+        return HttpResponse(jsonStr, mimetype='application/javascript')
+
+
+class tsneThread(threading.Thread):
+    def __init__(self, threadId, sessionKey):
+        threading.Thread.__init__(self)
+        self.threadId = threadId
+        self.sessionKey = sessionKey
+        self.words = None
+        self.coordinates = None
+
+    def run(self):
+        print "Starting thread - " + self.threadId
+        word, coordinates = tsneThread(self.threadId, self.sessionKey)
+        self.words = word
+        self.coordinates = coordinates
+        print "Exiting thread - " + self.threadId
+
+
+def tsneThread(threadId, sessionKey):
     lang1Embeddings = readEmbeddingFile('LANG1EMBEDDINGS', sessionKey)
     lang1Words = readWordsFile('LANG1WORDS', sessionKey)
     lang2Embeddings = readEmbeddingFile('LANG2EMBEDDINGS', sessionKey)
     lang2Words = readWordsFile('LANG2WORDS', sessionKey)
     words = lang1Words+lang2Words
 
-    print 'Data reading completed. Extracting coordinates now!'
+    print threadId + ' - Data reading completed. Extracting coordinates now!'
     coordinates = tsne.bh_tsne(lang1Embeddings+lang2Embeddings)
     coordinates = [coordinate for coordinate in coordinates]
-    print 'Coordinate extraction complete!'
+    print threadId + ' - Coordinate extraction complete!'
 
     print len(words)
     print len(coordinates)
     if len(words) != len(coordinates):
         raise Exception('Incorrect length of words and coordinates')
 
-    return HttpResponse('Hello world from Cluster method - '+sessionKey)
+    return words, coordinates
 
 
 def saveUploadedFile(tempFile, fileName, sessionKey):
@@ -110,4 +169,3 @@ def readWordsFile(fileName, sessionKey):
             if line:
                result.append(line.strip())
     return result
-

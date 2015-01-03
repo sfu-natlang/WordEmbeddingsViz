@@ -9,7 +9,7 @@ Note: The script does some minimal sanity checking of the input, but don't
 
 Example:
 
-    > echo -e '1.0\t0.0\n0.0\t1.0' | ./bhtsne.py -p 0.1
+    > echo -e '1.0\t0.0\n0.0\t1.0' | ./bhtsne.py -d 2 -p 0.1
     -2458.83181442  -6525.87718385
     2458.83181442   6525.87718385
 
@@ -37,15 +37,13 @@ Version:    2013-01-22
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
+from argparse import ArgumentParser, FileType
 from os.path import abspath, dirname, isfile, join as path_join
 from shutil import rmtree
 from struct import calcsize, pack, unpack
 from subprocess import Popen
 from sys import stderr, stdin, stdout
 from tempfile import mkdtemp
-from sklearn.decomposition import PCA
-from numpy import *
-
 
 ### Constants
 BH_TSNE_BIN_PATH = path_join(dirname(__file__), 'bh_tsne')
@@ -53,14 +51,33 @@ assert isfile(BH_TSNE_BIN_PATH), ('Unable to find the bh_tsne binary in the '
     'same directory as this script, have you forgotten to compile it?: {}'
     ).format(BH_TSNE_BIN_PATH)
 # Default hyper-parameter values from van der Maaten (2013)
+DEFAULT_NO_DIMS = 2
 DEFAULT_PERPLEXITY = 30.0
 DEFAULT_THETA = 0.5
+EMPTY_SEED = -1
+
 ###
+
+def _argparse():
+    argparse = ArgumentParser('bh_tsne Python wrapper')
+    argparse.add_argument('-d', '--no_dims', type=int,
+                          default=DEFAULT_NO_DIMS)
+    argparse.add_argument('-p', '--perplexity', type=float,
+            default=DEFAULT_PERPLEXITY)
+    # 0.0 for theta is equivalent to vanilla t-SNE
+    argparse.add_argument('-t', '--theta', type=float, default=DEFAULT_THETA)
+    argparse.add_argument('-r', '--randseed', type=int, default=EMPTY_SEED)
+    
+    argparse.add_argument('-v', '--verbose', action='store_true')
+    argparse.add_argument('-i', '--input', type=FileType('r'), default=stdin)
+    argparse.add_argument('-o', '--output', type=FileType('w'),
+            default=stdout)
+    return argparse
 
 
 class TmpDir:
     def __enter__(self):
-        self._tmp_dir_path = mkdtemp(dir='Temp/')
+        self._tmp_dir_path = mkdtemp()
         return self._tmp_dir_path
 
     def __exit__(self, type, value, traceback):
@@ -70,14 +87,13 @@ class TmpDir:
 def _read_unpack(fmt, fh):
     return unpack(fmt, fh.read(calcsize(fmt)))
 
-
-def bh_tsne(samples, perplexity=DEFAULT_PERPLEXITY, theta=DEFAULT_THETA,
-        verbose=False):
+def bh_tsne(samples, no_dims=DEFAULT_NO_DIMS, perplexity=DEFAULT_PERPLEXITY, theta=DEFAULT_THETA, randseed=EMPTY_SEED,
+        verbose=True):
     # Assume that the dimensionality of the first sample is representative for
     #   the whole batch
-    sample_dim = int(samples.get_shape()[1])
-    sample_count = int(samples.get_shape()[0])
-    
+    sample_dim = len(samples[0])
+    sample_count = len(samples)
+
     # bh_tsne works with fixed input and output paths, give it a temporary
     #   directory to work in so we don't clutter the filesystem
     with TmpDir() as tmp_dir_path:
@@ -85,15 +101,13 @@ def bh_tsne(samples, perplexity=DEFAULT_PERPLEXITY, theta=DEFAULT_THETA,
         #   vanilla tsne
         with open(path_join(tmp_dir_path, 'data.dat'), 'wb') as data_file:
             # Write the bh_tsne header
-            data_file.write(pack('iidd', sample_count, sample_dim, theta,
-                perplexity))
+            data_file.write(pack('iiddi', sample_count, sample_dim, theta, perplexity, no_dims))
             # Then write the data
             for sample in samples:
-                sample = sample.toarray()[0]
-                denseSample = []
-                for val in sample:
-                    denseSample.append(val)
-                data_file.write(pack('{}d'.format(len(denseSample)), *denseSample))
+                data_file.write(pack('{}d'.format(len(sample)), *sample))
+            # Write random seed if specified
+            if randseed != EMPTY_SEED:
+                data_file.write(pack('i', randseed))
 
         # Call bh_tsne and let it do its thing
         with open('/dev/null', 'w') as dev_null:
@@ -125,3 +139,33 @@ def bh_tsne(samples, perplexity=DEFAULT_PERPLEXITY, theta=DEFAULT_THETA,
             # The last piece of data is the cost for each sample, we ignore it
             #read_unpack('{}d'.format(sample_count), output_file)
 
+def main(args):
+    argp = _argparse().parse_args(args[1:])
+
+    # Read the data, with some sanity checking
+    data = []
+    for sample_line_num, sample_line in enumerate((l.rstrip('\n')
+            for l in argp.input), start=1):
+        sample_data = sample_line.split('\t')
+        try:
+            assert len(sample_data) == dims, ('Input line #{} of '
+                    'dimensionality {} although we have previously observed '
+                    'lines with dimensionality {}, possible data error or is '
+                    'the data sparsely encoded?'
+                    ).format(sample_line_num, len(sample_data), dims)
+        except NameError:
+            # First line, record the dimensionality
+            dims = len(sample_data)
+        data.append([float(e) for e in sample_data])
+
+    for result in bh_tsne(data, no_dims=argp.no_dims, perplexity=argp.perplexity, theta=argp.theta, randseed=argp.randseed,
+            verbose=argp.verbose):
+        fmt = ''
+        for i in range(1, len(result)):
+            fmt = fmt + '{}\t'
+        fmt = fmt + '{}\n'
+        argp.output.write(fmt.format(*result))
+
+if __name__ == '__main__':
+    from sys import argv
+    exit(main(argv))
