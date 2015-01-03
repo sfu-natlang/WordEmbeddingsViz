@@ -4,10 +4,10 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.http import HttpResponse
-
 #from cluster.models import Upload
 from cluster.forms import UploadForm
 from WordEmbeddingsViz.settings import MEDIA_ROOT
+import bhtsne.bhtsne as tsne
 
 
 def upload(request):
@@ -20,22 +20,22 @@ def upload(request):
             #lang1EmbeddingFile = Upload(embeddingFile= request.FILES['lang1EmbeddingFile'])
             #lang1EmbeddingFile.save()
             lang1EmbeddingFile = request.FILES['lang1EmbeddingFile']
-            handleUploadedFile(lang1EmbeddingFile, 'LANG1EMBEDDINGS', request.session.session_key)
+            saveUploadedFile(lang1EmbeddingFile, 'LANG1EMBEDDINGS', request.session.session_key)
 
             #lang1WordsFile = Upload(embeddingFile= request.FILES['lang1WordsFile'])
             #lang1WordsFile.save()
             lang1WordsFile = request.FILES['lang1WordsFile']
-            handleUploadedFile(lang1WordsFile, 'LANG1WORDS', request.session.session_key)
+            saveUploadedFile(lang1WordsFile, 'LANG1WORDS', request.session.session_key)
 
             #lang2EmbeddingFile = Upload(embeddingFile= request.FILES['lang2EmbeddingFile'])
             #lang2EmbeddingFile.save()
             lang2EmbeddingFile = request.FILES['lang2EmbeddingFile']
-            handleUploadedFile(lang2EmbeddingFile, 'LANG2EMBEDDINGS', request.session.session_key)
+            saveUploadedFile(lang2EmbeddingFile, 'LANG2EMBEDDINGS', request.session.session_key)
 
             #lang2WordsFile = Upload(embeddingFile= request.FILES['lang2WordsFile'])
             #lang2WordsFile.save()
             lang2WordsFile = request.FILES['lang2WordsFile']
-            handleUploadedFile(lang2WordsFile, 'LANG2WORDS', request.session.session_key)
+            saveUploadedFile(lang2WordsFile, 'LANG2WORDS', request.session.session_key)
 
             return HttpResponseRedirect('/cluster/'+request.session.session_key)
     else:
@@ -46,10 +46,25 @@ def upload(request):
 
 
 def cluster(request, sessionKey):
+    lang1Embeddings = readEmbeddingFile('LANG1EMBEDDINGS', sessionKey)
+    lang1Words = readWordsFile('LANG1WORDS', sessionKey)
+    lang2Embeddings = readEmbeddingFile('LANG2EMBEDDINGS', sessionKey)
+    lang2Words = readWordsFile('LANG2WORDS', sessionKey)
+
+    print 'Data reading completed. Extracting coordinates now!'
+    coordinates = tsne.bh_tsne(lang1Embeddings+lang2Embeddings)
+    print 'Coordinate extraction complete!'
+    words = lang1Words+lang2Words
+
+    print len(words)
+    print len(coordinates)
+    if len(words) != len(coordinates):
+        raise Exception('Incorrect length of words and coordinates')
+
     return HttpResponse('Hello world from Cluster method - '+sessionKey)
 
 
-def handleUploadedFile(tempFile, fileName, sessionKey):
+def saveUploadedFile(tempFile, fileName, sessionKey):
     folderName = MEDIA_ROOT+'/'+sessionKey+'/'
 
     if not os.path.exists(folderName):
@@ -59,4 +74,39 @@ def handleUploadedFile(tempFile, fileName, sessionKey):
         for chunk in tempFile.chunks():
             outFile.write(chunk)
 
+
+def readEmbeddingFile(fileName, sessionKey):
+    folderName = MEDIA_ROOT+'/'+sessionKey+'/'
+
+    if not os.path.exists(folderName):
+        return None
+
+    result = []
+    with open(folderName+fileName) as inFile:
+        for lineNum, line in enumerate(inFile):
+            lineSplit = line.split('\t')
+            try:
+                assert len(lineSplit) == dims, ('Input line #{} of dimensionality {} although we '
+                                                'have previously observed lines with dimensionality {}, '
+                                                'possible data error.'
+                ).format(lineNum, len(lineSplit, dims))
+            except NameError:
+                dims = len(lineSplit)
+            result.append([float(e) for e in lineSplit])
+    return result
+
+
+def readWordsFile(fileName, sessionKey):
+    folderName = MEDIA_ROOT+'/'+sessionKey+'/'
+
+    if not os.path.exists(folderName):
+        return None
+
+    result = []
+    with open(folderName+fileName) as inFile:
+        for line in inFile:
+            line = line.strip('\n\r')
+            if line:
+               result.append(line.strip())
+    return result
 
