@@ -50,11 +50,12 @@ def cluster(request, sessionKey):
     lang1Words = readWordsFile('LANG1WORDS', sessionKey)
     lang2Embeddings = readEmbeddingFile('LANG2EMBEDDINGS', sessionKey)
     lang2Words = readWordsFile('LANG2WORDS', sessionKey)
+    words = lang1Words+lang2Words
 
     print 'Data reading completed. Extracting coordinates now!'
     coordinates = tsne.bh_tsne(lang1Embeddings+lang2Embeddings)
+    coordinates = [coordinate for coordinate in coordinates]
     print 'Coordinate extraction complete!'
-    words = lang1Words+lang2Words
 
     print len(words)
     print len(coordinates)
