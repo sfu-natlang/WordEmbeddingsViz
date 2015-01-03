@@ -1,0 +1,6 @@
+*.iml
+.idea/
+resources/
+*.sqlite3
+temp/
+*.pyc

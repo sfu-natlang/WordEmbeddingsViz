@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Minimal Django File Upload Example</title>
+</head>
+<body>
+<!-- Upload form. Note enctype attribute! -->
+<form action="{% url "upload" %}" method="post" enctype="multipart/form-data">
+{% csrf_token %}
+<p>{{ form.non_field_errors }}</p>
+<p>{{ form.lang1EmbeddingFile.label_tag }} {{ form1.lang1EmbeddingFile.help_text }}</p>
+<p>
+    {{ form.lang1EmbeddingFile.errors }}
+    {{ form.lang1EmbeddingFile }}
+</p>
+
+<p>{{ form.lang1WordsFile.label_tag }} {{ form1.lang1WordsFile.help_text }}</p>
+<p>
+    {{ form.lang1WordsFile.errors }}
+    {{ form.lang1WordsFile }}
+</p>
+
+<p>{{ form.lang2EmbeddingFile.label_tag }} {{ form1.lang2EmbeddingFile.help_text }}</p>
+<p>
+    {{ form.lang2EmbeddingFile.errors }}
+    {{ form.lang2EmbeddingFile }}
+</p>
+
+<p>{{ form.lang2WordsFile.label_tag }} {{ form1.lang2WordsFile.help_text }}</p>
+<p>
+    {{ form.lang2WordsFile.errors }}
+    {{ form.lang2WordsFile }}
+</p>
+
+
+<p><input type="submit" value="Upload" /></p>
+</form>
+</body>
+</html>
