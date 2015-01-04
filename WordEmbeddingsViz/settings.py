@@ -9,7 +9,7 @@ https://docs.djangoproject.com/en/1.7/ref/settings/
 """
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-import os
+import os, tempfile
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 
 # Quick-start development settings - unsuitable for production
@@ -52,6 +52,8 @@ ROOT_URLCONF = 'WordEmbeddingsViz.urls'
 
 WSGI_APPLICATION = 'WordEmbeddingsViz.wsgi.application'
 
+SESSION_ENGINE = 'django.contrib.sessions.backends.file'
+SESSION_FILE_PATH = tempfile.gettempdir()
 
 # Database
 # https://docs.djangoproject.com/en/1.7/ref/settings/#databases
