@@ -15,7 +15,7 @@ def upload(request):
         if form.is_valid():
             if not request.session.exists(request.session.session_key):
                 request.session.create()
-
+            print request.session.session_key
             #lang1EmbeddingFile = Upload(embeddingFile= request.FILES['lang1EmbeddingFile'])
             #lang1EmbeddingFile.save()
             lang1EmbeddingFile = request.FILES['lang1EmbeddingFile']
@@ -45,33 +45,28 @@ def upload(request):
 
 
 def cluster(request):
-    print request.session.session_key
     request.session['done'] = False
-    request.session['timeElapsed'] = 0
     request.session.modified = True
     return render_to_response('cluster.html')
 
 
 def executeClustering(request):
-    print "In ExecuteClustering"
-    startTime = time.time()
-    clusterThread = tsneThread("tsneThread-"+request.session.session_key, request.session.session_key)
+    clusterThread = tsneThreadClass("tsneThread-"+request.session.session_key, request.session.session_key)
     clusterThread.start()
     while True:
         time.sleep(2)
         if clusterThread.isAlive():
-            request.session['timeElapsed'] = time.time() - startTime
-            print request.session['timeElapsed']
+            request.session['done'] = False
         else:
             request.session['done'] = True
             request.session['words'] = clusterThread.words
             request.session['coordinates'] = clusterThread.coordinates
-    return HttpResponse('Done', mimetype='text/plain')
+            break
+    return HttpResponse('All done.', content_type='text/plain')
 
 
 def getData(request):
     print "In GetData"
-    timeElapsed = request.session.get('timeElapsed', 0)
     isItDone = request.session.get('done', False)
     if isItDone:
         words = request.session.get('words', None)
@@ -81,14 +76,14 @@ def getData(request):
             result[i] = {'x':coordinate[0], 'y': coordinate[1], 'word': word}
         result['done'] = True
         jsonStr = json.dumps(result)
-        return HttpResponse(jsonStr, mimetype='application/javascript')
+        return HttpResponse(jsonStr, content_type='application/javascript')
     else:
-        result = {'done': False, 'timeElapsed': timeElapsed}
+        result = {'done': False}
         jsonStr = json.dumps(result)
-        return HttpResponse(jsonStr, mimetype='application/javascript')
+        return HttpResponse(jsonStr, content_type='application/javascript')
 
 
-class tsneThread(threading.Thread):
+class tsneThreadClass(threading.Thread):
     def __init__(self, threadId, sessionKey):
         threading.Thread.__init__(self)
         self.threadId = threadId
@@ -116,8 +111,6 @@ def tsneThread(threadId, sessionKey):
     coordinates = [coordinate for coordinate in coordinates]
     print threadId + ' - Coordinate extraction complete!'
 
-    print len(words)
-    print len(coordinates)
     if len(words) != len(coordinates):
         raise Exception('Incorrect length of words and coordinates')
 
