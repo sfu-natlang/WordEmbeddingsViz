@@ -10,49 +10,47 @@
 
         // The func that calls getCount
         function pull() {
+            console.log("Pull Called");
             // I use $.ajax. getJSON seems to cache the last data on ie6. Firefox work tho.
-
+            console.log("{% url 'getdata' %}");
             $.ajax ({
                 type: "GET",
                 url: "{% url 'getdata' %}",
+                success: updater, //Call this func when we have some data
                 dataType: "json",
                 cache: false, //VITAL line: the getJON func does not prevent caching!
-                success: updater //Call this func when we have some data
+
             })
         }
 
         // Func to use the data fetched
         function updater( data, success ) {
+            console.log("updater called");
             if (data) {
                 // If done flag sent, say so.
                 if (data.done) {
+                    console.log(data.done);
                     txt = "DONE";
+                    console.log(data);
                 } else {
                     // We are busy, get the count and...
-                    txt = data.timeElapsed;
+                    console.log(data.done);
+                    txt = "In Progress";
                     // set this to start again in 2 seconds:
                     window.setTimeout( pull, 2000 );
                 }
                 // Display out count/message
-                $('#msg').text( "SETTING TO:" + txt );
+                $('#msg').text( "CLUSTERING: " + txt );
             }
         } //end updater
 
         // You can start it automagically like this:
-        //$('#muffin').load("{% url 'executeclustering' %}");
+        $('#muffin').load("{% url 'executeclustering' %}");
+        window.setTimeout( pull, 10000);
 
-        //Or with an anchor
-        $("#go").click(function() {
-            $(this).hide(); // Hide the anchor
-            // Call doit func in Django view
-            $('#muffin').load("{% url 'executeclustering' %}");
-            // Start the pull function in 1 second:
-            window.setTimeout( pull, 1000);
-        });
     }); //end ready
 </script>
 
-<a id="go" href="#">Start</a>
 <div id="muffin">DARN</div>
 <div id="msg" style="border:1px solid red;">NUMBER</div>
 
