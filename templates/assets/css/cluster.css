@@ -1,0 +1,30 @@
+.chart-title {
+    border-bottom: 1px solid #d7d7d7;
+    color: #666;
+    font-size: 14px;
+    font-weight: 200;
+    padding: 7px 10px 4px;
+}
+
+.chart-wrapper {
+    background: #fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 3px;
+    margin-bottom: 10px;
+}
+
+#bilingual-embeddings {
+    display: none;
+}
+
+div.tooltip {
+    position: absolute;
+    text-align: center;
+    width: 50px;
+    padding: 2px;
+    font: 12px sans-serif;
+    background: white;
+    border: 0px;
+    pointer-events: none;
+    box-shadow: 0px 0px 10px black;
+}

@@ -1,25 +1,33 @@
+<!DOCTYPE html>
 <html>
 <head>
     {% load static %}
-    <script type="text/javascript" src="{% static 'js/jquery-1.11.2.js' %}"></script>
+    <!-- CSS -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/cluster.css' %}" rel="stylesheet">
 </head>
-<body>
+
+<!-- JS -->
+<script type="text/javascript" src="{% static 'js/jquery-1.11.2.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/d3.v3.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/pathgl.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/render-cluster.js' %}"></script>
 
 <script type="text/javascript">
+    /**
+     * Getting data from backend
+     */
     $(document).ready(function() {
-
-        // The func that calls getCount
+        // The func that calls getData
         function pull() {
             console.log("Pull Called");
-            // I use $.ajax. getJSON seems to cache the last data on ie6. Firefox work tho.
             console.log("{% url 'getdata' %}");
             $.ajax ({
                 type: "GET",
                 url: "{% url 'getdata' %}",
                 success: updater, //Call this func when we have some data
                 dataType: "json",
-                cache: false, //VITAL line: the getJON func does not prevent caching!
-
+                cache: false //VITAL line: the getJON func does not prevent caching!
             })
         }
 
@@ -27,32 +35,61 @@
         function updater( data, success ) {
             console.log("updater called");
             if (data) {
-                // If done flag sent, say so.
                 if (data.done) {
-                    console.log(data.done);
-                    txt = "DONE";
-                    console.log(data);
+                    txt = "Clustering Completed, Rendering Clusters!";
+                    /**
+                     * Render Cluster
+                     */
+                    renderData(data);
+                    $( "#loadWait" ).hide( "slow");
                 } else {
-                    // We are busy, get the count and...
-                    console.log(data.done);
-                    txt = "In Progress";
-                    // set this to start again in 2 seconds:
+                    txt = "Performing Clustering, Please Wait!";
                     window.setTimeout( pull, 2000 );
                 }
                 // Display out count/message
-                $('#msg').text( "CLUSTERING: " + txt );
+                $('#loadWait').text(txt);
             }
         } //end updater
 
-        // You can start it automagically like this:
-        $('#muffin').load("{% url 'executeclustering' %}");
-        window.setTimeout( pull, 10000);
+        /**
+         * Call the executeClustering method to begin tSNE
+         * execution. Once execution begins, check after
+         * 5 seconds whether execution has finished.
+         */
+        $.ajax ({
+            type: "GET",
+            url: "{% url 'executeclustering' %}",
+            cache: false
+        })
 
+        window.setTimeout( pull, 1000);
     }); //end ready
+
 </script>
 
-<div id="muffin">DARN</div>
-<div id="msg" style="border:1px solid red;">NUMBER</div>
+<body>
 
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-12">
+            <div id="loadWait" class="chart-title">Loading, Please Wait!</div>
+        </div>
+    </div>
+
+    <div id="bilingual-embeddings">
+        <div class="chart-wrapper">
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="chart-title">
+                        Bilingual Word Embeddings
+                    </div>
+                    <div class="chart-stage">
+                        <div id="cluster-render"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 </body>
 </html>
