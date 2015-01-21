@@ -1,81 +1,117 @@
 function renderData(jsonData) {
     $( "#bilingual-embeddings" ).show( "slow");
     console.log(jsonData);
+    $("#cluster-render").width($(window).width()-100).height($(window).height());
+    // configure for module loader
 
-    var width = $(window).width();
-    var height = $(window).height();
-
-    var tooltip = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("opacity", 0);
-    var tooltipRendered = false;
-
-    var data = [];
-    for(var key in jsonData) {
-        if (key == "done") {
-            continue;
+    require.config({
+        paths: {
+            echarts: 'http://echarts.baidu.com/build/dist'
         }
-        data.push([jsonData[key].x, jsonData[key].y, key, jsonData[key].word, jsonData[key].lang]);
-    }
+    });
 
-    console.log(data.length);
+    // use
+    require(
+        [
+            'echarts',
+            'echarts/chart/scatter' // require the specific chart type
+        ],
+        function (ec) {
+            // Initialize after dom ready
+            var myChart = ec.init(document.getElementById('cluster-render'));
 
-    var xMin = d3.min(data, function(d) {return d[0]});
-    var xMax = d3.max(data, function(d) {return d[0]});
-    var yMin = d3.min(data, function(d) {return d[1]});
-    var yMax = d3.max(data, function(d) {return d[1]});
+            option = {
+                tooltip : {
+                    trigger: 'axis',
+                    showDelay : 0,
+                    axisPointer:{
+                        type : 'cross',
+                        lineStyle: {
+                            type : 'dashed',
+                            width : 1
+                        }
+                    },
+                    formatter : function (params) {
+                        return params.value[2];
+                    }
+                },
+                legend: {
+                    data:['English','Chinese']
+                },
+                toolbox: {
+                    show : true,
+                    feature : {
+                        mark : {show: false,
+                            title : {
+                                mark : 'Mark',
+                                markUndo : 'Undo Mark',
+                                markClear : 'Clear Mark'
+                            }},
+                        dataZoom : {show: true,
+                            title : {
+                                dataZoom : 'Zoom In',
+                                dataZoomReset : 'Reset Zoom'
+                            }},
+                        dataView : {show: false, readOnly: false, title : 'View Data'},
+                        restore : {show: true, title: 'Restore'},
+                        saveAsImage : {show: true, title:'Save as Image'}
+                    }
+                },
+                xAxis : [
+                    {
+                        type : 'value',
+                        scale:true
+                    }
+                ],
+                yAxis : [
+                    {
+                        type : 'value',
+                        scale:true
+                    }
+                ],
+                series : [
+                    {
+                        name:'English',
+                        type:'scatter',
+                        large: true,
+                        data: (function () {
+                            var d = [];
+                            for(var key in jsonData) {
+                                if (key == "done") {
+                                    continue;
+                                }
+                                if (jsonData[key].lang == "lang1") {
+                                    d.push([jsonData[key].x, jsonData[key].y, jsonData[key].word]);
+                                }
+                            }
+                            //console.log(d)
+                            return d;
+                        })()
+                    },
+                    {
+                        name:'Chinese',
+                        type:'scatter',
+                        large: true,
+                        data: (function () {
+                            var d = [];
+                            for(var key in jsonData) {
+                                if (key == "done") {
+                                    continue;
+                                }
+                                if (jsonData[key].lang == "lang2") {
+                                    d.push([jsonData[key].x, jsonData[key].y, jsonData[key].word]);
+                                }
+                            }
+                            //console.log(d)
+                            return d;
+                        })()
+                    }
+                ]
+            };
 
-    var x = d3.scale.linear()
-        .domain([xMin, xMax])
-        .range([0, width]);
-
-    var y = d3.scale.linear()
-        .domain([yMin, yMax])
-        .range([0, height]);
-
-
-    var svg = d3.select("#cluster-render").append("svg")
-        .attr("width", width)
-        .attr("height", height)
-        .append("g")
-        .call(d3.behavior.zoom().x(x).y(y).scaleExtent([Number.MIN_VALUE, Number.MAX_VALUE]).on("zoom", zoom));
-
-    var circle = svg.selectAll("circle")
-        .data(data)
-        .enter().append("circle")
-        .attr("r", 3)
-        .attr("transform", transform)
-        .attr("fill",getColor)
-        .on("click", renderTooltip)
-        .on("click", renderTooltip);
-
-    function zoom() {
-        circle.attr("transform", transform);
-    }
-
-    function getColor(d) {
-        var lang = d[4];
-        if (lang == "lang1") {
-            return "hsl(0, 100%, 50%)";
-        } else if (lang == "lang2") {
-            return "hsl(120, 100%, 25%)";
+            // Load data into the ECharts instance
+            myChart.setOption(option);
         }
-    }
+    );
 
-    function transform(d) {
-        return "translate(" + x(d[0]) + "," + y(d[1]) + ")";
-    }
-
-    function renderTooltip(d) {
-        if (tooltipRendered == false) {
-            tooltipRendered = true;
-            tooltip.transition().duration(200).style("opacity", 1);
-            tooltip.html(d[3])
-                .style("left", (d3.event.pageX) + "px")
-                .style("top", (d3.event.pageY - 28) + "px");
-        } else {
-            tooltipRendered = false;
-            tooltip.transition().duration(500).style("opacity", 0)
-        }
-    }
 }
