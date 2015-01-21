@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    {% load static %}
+    <meta charset="UTF-8">
+    <title>Upload Coordinates</title>
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+</head>
+<body>
+<form action="{% url "upload-coordinates" %}" method="post" enctype="multipart/form-data">
+{% csrf_token %}
+<p>{{ form.non_field_errors }}</p>
+<p>{{ form.coordinatesFile.label_tag }} {{ form1.coordinatesFile.help_text }}</p>
+<p>
+    {{ form.coordinatesFile.errors }}
+    {{ form.coordinatesFile }}
+</p>
+
+<p>{{ form.wordsFile.label_tag }} {{ form1.wordsFile.help_text }}</p>
+<p>
+    {{ form.wordsFile.errors }}
+    {{ form.wordsFile }}
+</p>
+<p><input type="submit" value="Upload" /></p>
+</form>
+</body>
+</html>
