@@ -5,6 +5,8 @@
     <title>Minimal Django File Upload Example</title>
 </head>
 <body>
+<a href="upload-coordinates.html">Upload Coordinates</a>
+
 <!-- Upload form. Note enctype attribute! -->
 <form action="{% url "upload" %}" method="post" enctype="multipart/form-data">
 {% csrf_token %}

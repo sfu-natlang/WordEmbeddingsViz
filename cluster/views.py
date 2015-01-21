@@ -5,8 +5,10 @@ from django.http import HttpResponseRedirect
 from django.http import HttpResponse
 #from cluster.models import Upload
 from cluster.forms import UploadForm
+from cluster.forms import UploadEmbeddingsForm
 from WordEmbeddingsViz.settings import MEDIA_ROOT
 import bhtsne.bhtsne as tsne
+import cPickle as pickle
 
 
 def upload(request):
@@ -36,11 +38,34 @@ def upload(request):
             lang2WordsFile = request.FILES['lang2WordsFile']
             saveUploadedFile(lang2WordsFile, 'LANG2WORDS', request.session.session_key)
 
+            request.session['is_pre_calc'] = False
             return HttpResponseRedirect('/cluster')
     else:
         form = UploadForm()
 
     return render_to_response('upload.html', {'form': form},
+                              context_instance=RequestContext(request))
+
+
+def uploadCoordinates(request):
+    if request.method == 'POST':
+        form = UploadEmbeddingsForm(request.POST, request.FILES)
+        if form.is_valid():
+            if not request.session.exists(request.session.session_key):
+                request.session.create()
+            print request.session.session_key
+
+            coordinatesFile = request.FILES['coordinatesFile']
+            saveUploadedFile(coordinatesFile, 'PRECAL_COORDINATES', request.session.session_key)
+
+            wordsFile = request.FILES['wordsFile']
+            saveUploadedFile(wordsFile, 'PRECAL_WORDS',  request.session.session_key)
+
+            request.session['is_pre_calc'] = True
+            return HttpResponseRedirect('/cluster')
+    else:
+        form = UploadEmbeddingsForm()
+    return render_to_response('upload-coordinates.html', {'form': form},
                               context_instance=RequestContext(request))
 
 
@@ -51,29 +76,37 @@ def cluster(request):
 
 
 def executeClustering(request):
-    clusterThread = tsneThreadClass("tsneThread-"+request.session.session_key, request.session.session_key)
-    clusterThread.start()
-    while True:
-        time.sleep(2)
-        if clusterThread.isAlive():
-            request.session['done'] = False
-        else:
-            request.session['done'] = True
-            request.session['words'] = clusterThread.words
-            request.session['coordinates'] = clusterThread.coordinates
-            break
+    isPreCalc = request.session.get('is_pre_calc', False)
+    if isPreCalc:
+        print 'EXECUTING CLUSTERING - PRECALCULATED'
+        request.session['done'] = True
+        request.session['words'] = readPreCalcWords(request.session.session_key)
+        request.session['coordinates'] = readPreCalcCoordinates(request.session.session_key)
+    else:
+        clusterThread = tsneThreadClass("tsneThread-"+request.session.session_key, request.session.session_key)
+        clusterThread.start()
+        while True:
+            time.sleep(2)
+            if clusterThread.isAlive():
+                request.session['done'] = False
+            else:
+                request.session['done'] = True
+                request.session['words'] = clusterThread.words
+                request.session['coordinates'] = clusterThread.coordinates
+                break
     return HttpResponse('All done.', content_type='text/plain')
 
 
 def getData(request):
     print "In GetData"
     isItDone = request.session.get('done', False)
+    print isItDone
     if isItDone:
         words = request.session.get('words', None)
         coordinates = request.session.get('coordinates', None)
         result = {}
-        for i, (word, coordinate) in enumerate(zip(words, coordinates)):
-            result[i] = {'x':coordinate[0], 'y': coordinate[1], 'word': word}
+        for i, ((lang, word), coordinate) in enumerate(zip(words, coordinates)):
+            result[i] = {'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang}
         result['done'] = True
         jsonStr = json.dumps(result)
         return HttpResponse(jsonStr, content_type='application/javascript')
@@ -100,11 +133,16 @@ class tsneThreadClass(threading.Thread):
 
 
 def tsneThread(threadId, sessionKey):
+    print 'tsneThread'
     lang1Embeddings = readEmbeddingFile('LANG1EMBEDDINGS', sessionKey)
     lang1Words = readWordsFile('LANG1WORDS', sessionKey)
     lang2Embeddings = readEmbeddingFile('LANG2EMBEDDINGS', sessionKey)
     lang2Words = readWordsFile('LANG2WORDS', sessionKey)
-    words = lang1Words+lang2Words
+    words = []
+    for word in lang1Words:
+        words.append(('lang1', word))
+    for word in lang2Words:
+        words.append(('lang2', word))
 
     print threadId + ' - Data reading completed. Extracting coordinates now!'
     coordinates = tsne.bh_tsne(lang1Embeddings+lang2Embeddings)
@@ -113,7 +151,6 @@ def tsneThread(threadId, sessionKey):
 
     if len(words) != len(coordinates):
         raise Exception('Incorrect length of words and coordinates')
-
     return words, coordinates
 
 
@@ -162,3 +199,41 @@ def readWordsFile(fileName, sessionKey):
             if line:
                result.append(line.strip())
     return result
+
+
+def readPreCalcWords(sessionKey):
+    print 'READING PRECALC WORDS'
+    folderName = MEDIA_ROOT+'/'+sessionKey+'/'
+    if not os.path.exists(folderName):
+        return None
+    result = []
+    prevLang = ''
+    langNum = 0
+    with open(folderName+'PRECAL_WORDS') as inFile:
+        for line in inFile:
+            line = line.strip('\n\r')
+            if line:
+                lineSplit = line.split('\t')
+                if not (lineSplit[0].strip() == prevLang):
+                    prevLang = lineSplit[0].strip()
+                    langNum += 1
+                    langName = 'lang'+str(langNum)
+                result.append((langName, lineSplit[1].strip()))
+    return result
+
+
+def readPreCalcCoordinates(sessionKey):
+    print 'READING PRECALC COORDINATES'
+    folderName = MEDIA_ROOT+'/'+sessionKey+'/'
+    if not os.path.exists(folderName):
+        return None
+
+    result = []
+    with open(folderName+'PRECAL_COORDINATES') as inFile:
+        for line in inFile:
+            line = line.strip('\n\r')
+            if line:
+                lineSplit = line.split()
+                result.append([float(lineSplit[0].strip()), float(lineSplit[1].strip())])
+    return result
+

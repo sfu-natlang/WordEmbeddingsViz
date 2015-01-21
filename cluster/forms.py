@@ -22,3 +22,14 @@ class UploadForm(forms.Form):
         label='Select second language words file',
         help_text='English'
     )
+
+
+class UploadEmbeddingsForm(forms.Form):
+    coordinatesFile = forms.FileField(
+        label='Select coordinates file',
+        help_text='English+Chinese tSNE Coordinates'
+    )
+    wordsFile = forms.FileField(
+        label='Select words file',
+        help_text='<language>\t<word>'
+    )
