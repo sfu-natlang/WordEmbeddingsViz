@@ -26,10 +26,10 @@ class UploadForm(forms.Form):
 
 class UploadEmbeddingsForm(forms.Form):
     coordinatesFile = forms.FileField(
-        label='Select coordinates file',
+        label='Select Coordinates File',
         help_text='English+Chinese tSNE Coordinates'
     )
     wordsFile = forms.FileField(
-        label='Select words file',
-        help_text='<language>\t<word>'
+        label='Select Words File',
+        help_text='<language>\\t<word>'
     )

@@ -1,6 +1,5 @@
 function renderData(jsonData) {
     $( "#bilingual-embeddings" ).show( "slow");
-    console.log(jsonData);
     $("#cluster-render").width($(window).width()-100).height($(window).height());
     // configure for module loader
 

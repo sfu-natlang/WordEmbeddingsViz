@@ -5,23 +5,80 @@
     <meta charset="UTF-8">
     <title>Upload Coordinates</title>
     <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/upload.css' %}" rel="stylesheet">
 </head>
 <body>
-<form action="{% url "upload-coordinates" %}" method="post" enctype="multipart/form-data">
-{% csrf_token %}
-<p>{{ form.non_field_errors }}</p>
-<p>{{ form.coordinatesFile.label_tag }} {{ form1.coordinatesFile.help_text }}</p>
-<p>
-    {{ form.coordinatesFile.errors }}
-    {{ form.coordinatesFile }}
-</p>
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">NatLang WordEmbeddings Viz</a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li><a href="/">Upload Embeddings</a></li>
+                    <li class="active"><a href="#">Upload Coordinates<span class="sr-only">(current)</span></a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
 
-<p>{{ form.wordsFile.label_tag }} {{ form1.wordsFile.help_text }}</p>
-<p>
-    {{ form.wordsFile.errors }}
-    {{ form.wordsFile }}
-</p>
-<p><input type="submit" value="Upload" /></p>
-</form>
+    <div class="container">
+        <form class="form-upload" action="{% url "upload-coordinates" %}" method="post" enctype="multipart/form-data">
+            <h2 class="form-heading">Upload Coordinates</h2>
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+
+            <div class="form-group">
+                <div class="form-labels">
+                    <div class="form-label">
+                        {{ form.coordinatesFile.label_tag }}
+                    </div>
+                    <div class="form-help">
+                        {{ form.coordinatesFile.help_text }}
+                    </div>
+                </div>
+
+                {% if form.coordinatesFile.errors %}
+                    {% for error in form.coordinatesFile.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <span class="btn btn-success fileinput-button">
+                    <span>Add Coordinate File</span>
+                    {{ form.coordinatesFile }}
+                </span>
+            </div>
+
+            <div class="form-group">
+                <div class="form-labels">
+                    <div class="form-label">
+                        {{ form.wordsFile.label_tag }}
+                    </div>
+                    <div class="form-help">
+                        {{ form.wordsFile.help_text }}
+                    </div>
+                </div>
+
+                {% if form.wordsFile.errors %}
+                    {% for error in form.wordsFile.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+
+                <span class="btn btn-success fileinput-button">
+                    <span>Add Word File</span>
+                    {{ form.wordsFile }}
+                </span>
+            </div>
+
+            <input type="submit" class="btn btn-default btn-lg btn-block btn-primary start" value="Upload" /></p>
+        </form>
+    </div>
 </body>
 </html>

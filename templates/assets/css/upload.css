@@ -1,0 +1,57 @@
+body {
+    padding-bottom: 40px;
+    background-color: #eee;
+}
+
+.form-upload {
+    padding: 15px;
+    margin: 0 auto;
+    max-width: 440px;
+}
+
+.form-heading {
+    text-align: center;
+    text-transform: uppercase;
+    margin-bottom: 50px;
+}
+
+.form-upload .form-labels {
+    display: flex;
+    color: #666;
+    font-size: 14px;
+    font-weight: 200;
+    padding: 7px 0px 4px;
+    margin-bottom: 5px;
+}
+
+.form-upload .form-label {
+
+}
+
+.form-upload .form-help {
+    color: #656565;
+    padding-left: 10px;
+}
+
+.form-group {
+    border-bottom: 1px solid #d7d7d7;
+    padding: 3px;
+}
+.form-group input {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+    margin: 0px;
+    opacity: 0;
+    font-size: 200px;
+    direction: ltr;
+    cursor: pointer;
+}
+
+.fileinput-button {
+
+    overflow: hidden;
+    position: relative;
+    margin: auto;
+}
+

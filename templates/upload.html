@@ -1,42 +1,135 @@
 <!DOCTYPE html>
 <html>
 <head>
+    {% load static %}
+
     <meta charset="utf-8">
-    <title>Minimal Django File Upload Example</title>
+    <title>Upload Embeddings</title>
+
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <link href="{% static 'css/upload.css' %}" rel="stylesheet">
 </head>
 <body>
-<a href="upload-coordinates.html">Upload Coordinates</a>
+    <nav class="navbar navbar-inverse">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <a class="navbar-brand" href="#">NatLang WordEmbeddings Viz</a>
+            </div>
+            <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                <ul class="nav navbar-nav">
+                    <li class="active"><a href="#">Upload Embeddings<span class="sr-only">(current)</span></a></li>
+                    <li><a href="upload-coordinates.html">Upload Coordinates</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container">
 
-<!-- Upload form. Note enctype attribute! -->
-<form action="{% url "upload" %}" method="post" enctype="multipart/form-data">
-{% csrf_token %}
-<p>{{ form.non_field_errors }}</p>
-<p>{{ form.lang1EmbeddingFile.label_tag }} {{ form1.lang1EmbeddingFile.help_text }}</p>
-<p>
-    {{ form.lang1EmbeddingFile.errors }}
-    {{ form.lang1EmbeddingFile }}
-</p>
+    <!-- Upload form. Note enctype attribute! -->
+        <form class="form-upload" action="{% url "upload" %}" method="post" enctype="multipart/form-data">
+            <h2 class="form-heading">Upload Embeddings</h2>
+            {% csrf_token %}
+            {{ form.non_field_errors }}
 
-<p>{{ form.lang1WordsFile.label_tag }} {{ form1.lang1WordsFile.help_text }}</p>
-<p>
-    {{ form.lang1WordsFile.errors }}
-    {{ form.lang1WordsFile }}
-</p>
+            <div class="form-group">
+                <div class="form-labels">
+                    <div class="form-label">
+                        {{ form.lang1EmbeddingFile.label_tag }}
+                    </div>
+                    <div class="form-help">
+                        {{ form1.lang1EmbeddingFile.help_text }}
+                    </div>
+                </div>
 
-<p>{{ form.lang2EmbeddingFile.label_tag }} {{ form1.lang2EmbeddingFile.help_text }}</p>
-<p>
-    {{ form.lang2EmbeddingFile.errors }}
-    {{ form.lang2EmbeddingFile }}
-</p>
+                {% if form.lang1EmbeddingFile.errors %}
+                    {% for error in form.lang1EmbeddingFile.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
 
-<p>{{ form.lang2WordsFile.label_tag }} {{ form1.lang2WordsFile.help_text }}</p>
-<p>
-    {{ form.lang2WordsFile.errors }}
-    {{ form.lang2WordsFile }}
-</p>
+                <span class="btn btn-success fileinput-button">
+                    <span>Add Lang1 Embedding File</span>
+                        {{ form.lang1EmbeddingFile }}
+                </span>
+            </div>
+
+            <div class="form-group">
+                <div class="form-labels">
+                    <div class="form-label">
+                        {{ form.lang1WordsFile.label_tag }}
+                    </div>
+                    <div class="form-help">
+                        {{ form1.lang1WordsFile.help_text }}
+                    </div>
+                </div>
+
+                {% if form.lang1WordsFile.errors %}
+                    {% for error in form.lang1WordsFile.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <span class="btn btn-success fileinput-button">
+                    <span>Add Lang1 Word File</span>
+                        {{ form.lang1WordsFile }}
+                </span>
+            </div>
+
+            <div class="form-group">
+                <div class="form-labels">
+                    <div class="form-label">
+                        {{ form.lang2EmbeddingFile.label_tag }}
+                    </div>
+                    <div class="form-help">
+                        {{ form1.lang2EmbeddingFile.help_text }}
+                    </div>
+                </div>
+
+                {% if form.lang2EmbeddingFile.errors %}
+                    {% for error in form.lang2EmbeddingFile.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+
+                <span class="btn btn-success fileinput-button">
+                    <span>Add Lang2 Embedding File</span>
+                        {{ form.lang2EmbeddingFile }}
+                </span>
+            </div>
+
+            <div class="form-group">
+                <div class="form-labels">
+                    <div class="form-label">
+                        {{ form.lang2WordsFile.label_tag }}
+                    </div>
+                    <div class="form-help">
+                        {{ form1.lang2WordsFile.help_text }}
+                    </div>
+                </div>
+
+                {% if form.lang2WordsFile.errors %}
+                    {% for error in form.lang2WordsFile.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            {{ error|escape }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+                
+                <span class="btn btn-success fileinput-button">
+                    <span>Add Lang2 Word File</span>
+                    {{ form.lang2WordsFile }}
+                </span>
+            </div>
 
 
-<p><input type="submit" value="Upload" /></p>
-</form>
+            <input type="submit" class="btn btn-default btn-lg btn-block btn-primary start"value="Upload" />
+        </form>
+    </div>
 </body>
 </html>
