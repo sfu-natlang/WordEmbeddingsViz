@@ -24,6 +24,7 @@ function renderData(jsonData) {
                     trigger: 'axis',
                     showDelay : 0,
                     axisPointer:{
+                        show:true,
                         type : 'cross',
                         lineStyle: {
                             type : 'dashed',
@@ -51,7 +52,7 @@ function renderData(jsonData) {
                                 dataZoom : 'Zoom In',
                                 dataZoomReset : 'Reset Zoom'
                             }},
-                        dataView : {show: false, readOnly: false, title : 'View Data'},
+                        dataView : {show: false, readOnly: true, title : 'View Data'},
                         restore : {show: true, title: 'Restore'},
                         saveAsImage : {show: true, title:'Save as Image'}
                     }
@@ -59,13 +60,15 @@ function renderData(jsonData) {
                 xAxis : [
                     {
                         type : 'value',
-                        scale:true
+                        scale:true,
+                        show: false
                     }
                 ],
                 yAxis : [
                     {
                         type : 'value',
-                        scale:true
+                        scale:true,
+                        show: false
                     }
                 ],
                 series : [
@@ -73,6 +76,16 @@ function renderData(jsonData) {
                         name:'English',
                         type:'scatter',
                         large: true,
+                        itemStyle: {
+                            normal: {
+                                label: {
+                                    show: true,
+                                    formatter : function (params) {
+                                        return params.value[2];
+                                    }
+                                }
+                            }
+                        },
                         data: (function () {
                             var d = [];
                             for(var key in jsonData) {
@@ -86,11 +99,23 @@ function renderData(jsonData) {
                             //console.log(d)
                             return d;
                         })()
-                    },
+                    }, 
+                    
                     {
                         name:'Chinese',
                         type:'scatter',
                         large: true,
+                        itemStyle: {
+                            normal : {
+                                label : {
+                                    show: true,
+                                    formatter : function (params) {
+                                        return params.value[2];
+                                    }
+                                    //formatter : '{b}'
+                                }
+                            }
+                        },
                         data: (function () {
                             var d = [];
                             for(var key in jsonData) {
