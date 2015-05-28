@@ -69,12 +69,13 @@ function renderData(jsonData) {
                             readOnly: true,
                             title : 'View Alignments',
                             optionToContent: function(){
-                                if (alignments.length == 0) {
+                                if (alignments.length == 0 || null == alignments[0].wordLang1 ||
+                                    null == alignments[0].wordLang2) {
                                     return '';
                                 }
                                 var table = '<table style="width:100%;text-align:center"><tbody><tr>'
-                                    + '<td>' + alignments[0].wordLang1.seriesName + '</td>'
-                                    + '<td>' + alignments[0].wordLang2.seriesName + '</td>'
+                                    + '<td><b>' + alignments[0].wordLang1.seriesName + '</b></td>'
+                                    + '<td><b>' + alignments[0].wordLang2.seriesName + '</b></td>'
                                     + '</tr>';
                                 for (var i = 0, l = alignments.length; i < l; i++) {
                                     table += '<tr>'
@@ -86,7 +87,7 @@ function renderData(jsonData) {
 
                                 return table;
                             },
-                            lang: ['Data View', 'Close', 'Refresh']
+                            lang: ['View Alignments', 'Close', 'Refresh']
                         },
                         restore : {show: true, title: 'Restore'},
                         saveAsImage : {show: true, title:'Save as Image'},
