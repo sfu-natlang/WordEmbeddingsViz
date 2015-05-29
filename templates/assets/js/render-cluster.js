@@ -78,6 +78,9 @@ function renderData(jsonData) {
                                     + '<td><b>' + alignments[0].wordLang2.seriesName + '</b></td>'
                                     + '</tr>';
                                 for (var i = 0, l = alignments.length; i < l; i++) {
+                                    if (null == alignments[i].wordLang1 || null == alignments[i].wordLang2) {
+                                        continue;
+                                    }
                                     table += '<tr>'
                                     + '<td>' + alignments[i].wordLang1.word + '</td>'
                                     + '<td>' + alignments[i].wordLang2.word + '</td>'
@@ -98,6 +101,10 @@ function renderData(jsonData) {
                             onclick : function (){
                                 if (alignmentEnabled) {
                                     alignmentEnabled = false;
+                                    var alignmentObj = alignments.pop();
+                                    if (alignmentObj.isAligned()) {
+                                        alignments.push(alignmentObj);
+                                    }
                                 } else {
                                     alignmentEnabled = true;
                                 }
@@ -205,6 +212,7 @@ function renderData(jsonData) {
             var alignedWords = [];
 
             function createAlignment(param) {
+                console.log(param);
                 if (alignmentEnabled) {
                     var seriesIndex = param.seriesIndex;
                     var seriesName = param.seriesName;
@@ -244,7 +252,6 @@ function renderData(jsonData) {
 
                         //If alignment object is aligned then create markLine
                         if (alignmentObj.isAligned()) {
-                            console.log('Adding MarkLine');
                             var wordLang1 = alignmentObj.wordLang1;
                             var wordLang2 = alignmentObj.wordLang2;
                             var markLineData = {data: [[{xAxis: wordLang1.xCoord, yAxis: wordLang1.yCoord},
