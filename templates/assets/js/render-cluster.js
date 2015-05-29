@@ -147,7 +147,21 @@ function renderData(jsonData) {
                             }
                             //console.log(d)
                             return d;
-                        })()
+                        })(),
+                        markLine : {
+                            clickable: false,
+                            symbol: ['none', 'none'],
+                            itemStyle: {
+                                normal: {
+                                    color: '#088308',
+                                    lineStyle: {
+                                        type: 'dashed',
+                                        width: 1
+                                    }
+                                }
+                            },
+                            data: []
+                        }
                     }, 
                     
                     {
@@ -196,6 +210,8 @@ function renderData(jsonData) {
                     var seriesName = param.seriesName;
                     var word = param.data[2];
                     var dataIndex = param.dataIndex;
+                    var xCoord = param.data[0];
+                    var yCoord = param.data[1];
 
                     if (alignedWords.indexOf(dataIndex) != -1) {
                         alert('Word: ' + word + ', is already aligned. Choose another word.')
@@ -209,7 +225,7 @@ function renderData(jsonData) {
                         } else {
                             alignmentObj = new Alignment();
                         }
-                        var wordObj = new Word(word, seriesIndex, seriesName, dataIndex);
+                        var wordObj = new Word(word, seriesIndex, seriesName, dataIndex, xCoord, yCoord);
                         if (alignmentObj.canAddWord(wordObj)) {
                             alignmentObj.addWord(wordObj);
                             alignedWords.push(dataIndex);
@@ -226,22 +242,36 @@ function renderData(jsonData) {
                             }
                         }
 
+                        //If alignment object is aligned then create markLine
+                        if (alignmentObj.isAligned()) {
+                            console.log('Adding MarkLine');
+                            var wordLang1 = alignmentObj.wordLang1;
+                            var wordLang2 = alignmentObj.wordLang2;
+                            var markLineData = {data: [[{xAxis: wordLang1.xCoord, yAxis: wordLang1.yCoord},
+                                {xAxis: wordLang2.xCoord, yAxis: wordLang2.yCoord}]]};
+                            myChart.addMarkLine(0, markLineData);
+                        }
+
                         alignments.push(alignmentObj);
                     }
                 }
             }
 
             myChart.on(ecConfig.EVENT.CLICK, createAlignment);
+            /*var markData = {data: [[{xAxis: 0, yAxis: 5}, {xAxis: 20, yAxis: 5}]]};
+            myChart.addMarkLine(0, markData);*/
         }
     );
 
 }
 
-function Word(word, seriesIndex, seriesName, dataIndex) {
+function Word(word, seriesIndex, seriesName, dataIndex, xCoord, yCoord) {
     this.word = word;
     this.seriesIndex = seriesIndex;
     this.seriesName = seriesName;
     this.dataIndex = dataIndex;
+    this.xCoord = xCoord;
+    this.yCoord = yCoord;
 }
 
 function Alignment(){
