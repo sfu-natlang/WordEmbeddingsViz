@@ -275,10 +275,7 @@ function Alignment(){
     this.canAddWord = function(Word) {
         if (Word.seriesIndex == "0" && null != this.wordLang1) {
             return false;
-        } else {
-            return true;
-        }
-        if (Word.seriesIndex == "1" && null != this.wordLang2) {
+        } else if (Word.seriesIndex == "1" && null != this.wordLang2) {
             return false;
         } else {
             return true
