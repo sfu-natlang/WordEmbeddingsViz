@@ -35,9 +35,8 @@ function renderData(jsonData) {
                         }
                     },
                     formatter : function (params) {
-                        console.log(params);
                         if(params.name.indexOf('Markline') === 0) {
-                            return null;
+                            return 'Alignment';
                         } else {
                             return params.value[2];
                         }
@@ -225,7 +224,6 @@ function renderData(jsonData) {
 
             var alignments = [];
             var alignedWords = [];
-            var alignmentIndex = 0;
 
             function createAlignment(param) {
                 if(param.name.indexOf('Markline') === 0 ) {
