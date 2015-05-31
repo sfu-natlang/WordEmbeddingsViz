@@ -24,10 +24,10 @@ function renderData(jsonData) {
 
             option = {
                 tooltip : {
-                    trigger: 'axis',
+                    trigger: 'item',
                     showDelay : 0,
                     axisPointer:{
-                        show:true,
+                        show: false,
                         type : 'cross',
                         lineStyle: {
                             type : 'dashed',
@@ -35,7 +35,12 @@ function renderData(jsonData) {
                         }
                     },
                     formatter : function (params) {
-                        return params.value[2];
+                        console.log(params);
+                        if(params.name.indexOf('Markline') === 0) {
+                            return null;
+                        } else {
+                            return params.value[2];
+                        }
                     }
                 },
                 legend: {
@@ -90,7 +95,7 @@ function renderData(jsonData) {
 
                                 return table;
                             },
-                            lang: ['View Alignments', 'Close', 'Refresh']
+                            lang: ['', 'Close', 'Refresh']
                         },
                         restore : {show: true, title: 'Restore'},
                         saveAsImage : {show: true, title:'Save as Image'},
@@ -104,6 +109,17 @@ function renderData(jsonData) {
                                     var alignmentObj = alignments.pop();
                                     if (alignmentObj.isAligned()) {
                                         alignments.push(alignmentObj);
+                                    } else {
+                                        var word = null;
+                                        if (null != alignmentObj.wordLang1) {
+                                            word = alignmentObj.wordLang1;
+                                        } else if(null != alignmentObj.wordLang2) {
+                                            word = alignmentObj.wordLang2;
+                                        }
+                                        var index = alignedWords.indexOf(word.dataIndex);
+                                        if (index >= 0) {
+                                            alignedWords.splice(index, 1);
+                                        }
                                     }
                                 } else {
                                     alignmentEnabled = true;
@@ -152,11 +168,10 @@ function renderData(jsonData) {
                                     d.push([jsonData[key].x, jsonData[key].y, jsonData[key].word]);
                                 }
                             }
-                            //console.log(d)
                             return d;
                         })(),
                         markLine : {
-                            clickable: false,
+                            clickable: true,
                             symbol: ['none', 'none'],
                             itemStyle: {
                                 normal: {
@@ -169,8 +184,8 @@ function renderData(jsonData) {
                             },
                             data: []
                         }
-                    }, 
-                    
+                    },
+
                     {
                         name:'Chinese',
                         type:'scatter',
@@ -210,10 +225,15 @@ function renderData(jsonData) {
 
             var alignments = [];
             var alignedWords = [];
+            var alignmentIndex = 0;
 
             function createAlignment(param) {
-                console.log(param);
-                if (alignmentEnabled) {
+                if(param.name.indexOf('Markline') === 0 ) {
+                    var deleteConfirm = confirm("Would you like to delete this alignment?");
+                    if (deleteConfirm) {
+                        deleteAlignment(param);
+                    }
+                } else if (alignmentEnabled) {
                     var seriesIndex = param.seriesIndex;
                     var seriesName = param.seriesName;
                     var word = param.data[2];
@@ -254,14 +274,38 @@ function renderData(jsonData) {
                         if (alignmentObj.isAligned()) {
                             var wordLang1 = alignmentObj.wordLang1;
                             var wordLang2 = alignmentObj.wordLang2;
-                            var markLineData = {data: [[{xAxis: wordLang1.xCoord, yAxis: wordLang1.yCoord},
-                                {xAxis: wordLang2.xCoord, yAxis: wordLang2.yCoord}]]};
+                            var markLineData = {data: [[{xAxis: wordLang1.xCoord, yAxis: wordLang1.yCoord,
+                                name:'Markline - '+ alignments.length.toString(), word1: wordLang1.word, alignmentIndex: alignments.length}, {xAxis: wordLang2.xCoord, yAxis: wordLang2.yCoord,
+                            word2: wordLang2.word}]]};
                             myChart.addMarkLine(0, markLineData);
                         }
-
                         alignments.push(alignmentObj);
                     }
                 }
+            }
+
+            function deleteAlignment(param) {
+                console.log('Delete Alignment');
+
+                //Find the alignment
+                //remove the alignment
+                var alignmentIndex = param.data.alignmentIndex;
+                var alignmentObj = alignments[alignmentIndex];
+
+                //remove aligned words and alignment
+                var word1Index = alignedWords.indexOf(alignmentObj.wordLang1.dataIndex);
+                if (word1Index >= 0) {
+                    alignedWords.splice(word1Index, 1);
+                }
+                var word2Index = alignedWords.indexOf(alignmentObj.wordLang2.dataIndex);
+                if (word2Index >= 0) {
+                    alignedWords.splice(word2Index, 1);
+                }
+
+                alignments.splice(alignmentIndex, 1);
+
+                //remove the markline
+                myChart.delMarkLine(0, param.name);
             }
 
             myChart.on(ecConfig.EVENT.CLICK, createAlignment);
