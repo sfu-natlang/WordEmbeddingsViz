@@ -276,6 +276,7 @@ function renderData(jsonData) {
                                 name:'Markline - '+ alignments.length.toString(), word1: wordLang1.word, alignmentIndex: alignments.length}, {xAxis: wordLang2.xCoord, yAxis: wordLang2.yCoord,
                             word2: wordLang2.word}]]};
                             myChart.addMarkLine(0, markLineData);
+                            alignmentObj.alignmentIndex = alignments.length;
                         }
                         alignments.push(alignmentObj);
                     }
@@ -288,7 +289,8 @@ function renderData(jsonData) {
                 //Find the alignment
                 //remove the alignment
                 var alignmentIndex = param.data.alignmentIndex;
-                var alignmentObj = alignments[alignmentIndex];
+                var index = findAlignment(alignmentIndex);
+                var alignmentObj = alignments[index];
 
                 //remove aligned words and alignment
                 var word1Index = alignedWords.indexOf(alignmentObj.wordLang1.dataIndex);
@@ -299,17 +301,29 @@ function renderData(jsonData) {
                 if (word2Index >= 0) {
                     alignedWords.splice(word2Index, 1);
                 }
-
-                alignments.splice(alignmentIndex, 1);
+                console.log('Deleting - ');
+                console.log(alignments[index]);
+                alignments.splice(index, 1);
 
                 //remove the markline
                 myChart.delMarkLine(0, param.name);
+            }
+
+            function findAlignment(alignmentIndex) {
+                var result;
+                for(result = 0; result < alignments.length; result++) {
+                    if(alignments[result].alignmentIndex == alignmentIndex){
+                        return result;
+                    }
+                }
+                return null;
             }
 
             myChart.on(ecConfig.EVENT.CLICK, createAlignment);
             /*var markData = {data: [[{xAxis: 0, yAxis: 5}, {xAxis: 20, yAxis: 5}]]};
             myChart.addMarkLine(0, markData);*/
         }
+
     );
 
 }
