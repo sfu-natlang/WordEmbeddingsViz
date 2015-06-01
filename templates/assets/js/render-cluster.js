@@ -98,7 +98,7 @@ function renderData(jsonData) {
                         },
                         restore : {show: true, title: 'Restore'},
                         saveAsImage : {show: true, title:'Save as Image'},
-                        myTool : {
+                        align : {
                             show : true,
                             title : 'Align',
                             icon : 'assets/img/link.png',
@@ -125,6 +125,12 @@ function renderData(jsonData) {
                                 }
                                 alert(alignmentEnabled);
                             }
+                        },
+                        download : {
+                            show : true,
+                            title : 'Download Alignments',
+                            icon : 'assets/img/download.png',
+                            onclick : downloadData
                         }
                     }
                 },
@@ -317,6 +323,25 @@ function renderData(jsonData) {
                     }
                 }
                 return null;
+            }
+
+            function downloadData() {
+                var table = '';
+                if (alignments.length == 0 || null == alignments[0].wordLang1 ||
+                    null == alignments[0].wordLang2) {
+                    alert('No words have been currently aligned. No download available.');
+                } else {
+                    for (var i = 0, l = alignments.length; i < l; i++) {
+                        if (null == alignments[i].wordLang1 || null == alignments[i].wordLang2) {
+                            continue;
+                        }
+                        table += alignments[i].wordLang1.word + '\t' + alignments[i].wordLang2.word +'\n';
+                    }
+
+                    var blob = new Blob([table], {type: "text/plain;charset=utf-8"});
+                    saveAs(blob, "Alignments.tsv");
+                }
+
             }
 
             myChart.on(ecConfig.EVENT.CLICK, createAlignment);
