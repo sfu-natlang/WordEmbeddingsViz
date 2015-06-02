@@ -115,10 +115,6 @@ function renderData(jsonData) {
                                         } else if(null != alignmentObj.wordLang2) {
                                             word = alignmentObj.wordLang2;
                                         }
-                                        var index = alignedWords.indexOf(word.dataIndex);
-                                        if (index >= 0) {
-                                            alignedWords.splice(index, 1);
-                                        }
                                     }
                                 } else {
                                     alignmentEnabled = true;
@@ -229,7 +225,6 @@ function renderData(jsonData) {
             var ecConfig = require('echarts/config');
 
             var alignments = [];
-            var alignedWords = [];
 
             function createAlignment(param) {
                 if(param.name.indexOf('Markline') === 0 ) {
@@ -245,47 +240,38 @@ function renderData(jsonData) {
                     var xCoord = param.data[0];
                     var yCoord = param.data[1];
 
-                    if (alignedWords.indexOf(dataIndex) != -1) {
-                        alert('Word: ' + word + ', is already aligned. Choose another word.')
-                    } else {
-                        var alignmentObj = alignments.pop();
-                        if (null != alignmentObj) {
-                            if(alignmentObj.isAligned()) {
-                                alignments.push(alignmentObj);
-                                alignmentObj = new Alignment();
-                            }
-                        } else {
+                    var alignmentObj = alignments.pop();
+                    if (null != alignmentObj) {
+                        if(alignmentObj.isAligned()) {
+                            alignments.push(alignmentObj);
                             alignmentObj = new Alignment();
                         }
-                        var wordObj = new Word(word, seriesIndex, seriesName, dataIndex, xCoord, yCoord);
-                        if (alignmentObj.canAddWord(wordObj)) {
-                            alignmentObj.addWord(wordObj);
-                            alignedWords.push(dataIndex);
-                        } else {
-                            var confirmation = confirm("Cannot add " + word + " to alignment as word of same language " +
-                            "already selected. Would you like to replace previous selection");
-                            if (confirmation) {
-                                var replacedWord = alignmentObj.replaceWord(wordObj);
-                                alignedWords.push(dataIndex);
-                                var index = alignedWords.indexOf(replacedWord.dataIndex);
-                                if (index >= 0) {
-                                    alignedWords.splice(index, 1);
-                                }
-                            }
-                        }
-
-                        //If alignment object is aligned then create markLine
-                        if (alignmentObj.isAligned()) {
-                            var wordLang1 = alignmentObj.wordLang1;
-                            var wordLang2 = alignmentObj.wordLang2;
-                            var markLineData = {data: [[{xAxis: wordLang1.xCoord, yAxis: wordLang1.yCoord,
-                                name:'Markline - '+ alignments.length.toString(), word1: wordLang1.word, alignmentIndex: alignments.length}, {xAxis: wordLang2.xCoord, yAxis: wordLang2.yCoord,
-                            word2: wordLang2.word}]]};
-                            myChart.addMarkLine(0, markLineData);
-                            alignmentObj.alignmentIndex = alignments.length;
-                        }
-                        alignments.push(alignmentObj);
+                    } else {
+                        alignmentObj = new Alignment();
                     }
+                    var wordObj = new Word(word, seriesIndex, seriesName, dataIndex, xCoord, yCoord);
+                    if (alignmentObj.canAddWord(wordObj)) {
+                        alignmentObj.addWord(wordObj);
+                    } else {
+                        var confirmation = confirm("Cannot add " + word + " to alignment as word of same language " +
+                        "already selected. Would you like to replace previous selection");
+                        if (confirmation) {
+                            var replacedWord = alignmentObj.replaceWord(wordObj);
+                        }
+                    }
+
+                    //If alignment object is aligned then create markLine
+                    if (alignmentObj.isAligned()) {
+                        var wordLang1 = alignmentObj.wordLang1;
+                        var wordLang2 = alignmentObj.wordLang2;
+                        var markLineData = {data: [[{xAxis: wordLang1.xCoord, yAxis: wordLang1.yCoord,
+                            name:'Markline - '+ alignments.length.toString(), word1: wordLang1.word, alignmentIndex: alignments.length}, {xAxis: wordLang2.xCoord, yAxis: wordLang2.yCoord,
+                        word2: wordLang2.word}]]};
+                        myChart.addMarkLine(0, markLineData);
+                        alignmentObj.alignmentIndex = alignments.length;
+                    }
+                    alignments.push(alignmentObj);
+                    
                 }
             }
 
@@ -298,15 +284,6 @@ function renderData(jsonData) {
                 var index = findAlignment(alignmentIndex);
                 var alignmentObj = alignments[index];
 
-                //remove aligned words and alignment
-                var word1Index = alignedWords.indexOf(alignmentObj.wordLang1.dataIndex);
-                if (word1Index >= 0) {
-                    alignedWords.splice(word1Index, 1);
-                }
-                var word2Index = alignedWords.indexOf(alignmentObj.wordLang2.dataIndex);
-                if (word2Index >= 0) {
-                    alignedWords.splice(word2Index, 1);
-                }
                 console.log('Deleting - ');
                 console.log(alignments[index]);
                 alignments.splice(index, 1);
