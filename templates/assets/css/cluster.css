@@ -28,3 +28,12 @@ div.tooltip {
     pointer-events: none;
     box-shadow: 0px 0px 10px black;
 }
+
+.concordance-box {
+    border: 1px solid #e2e2e2;
+    margin-top: 60px;
+}
+
+.word-concordance {
+    min-height: 50px;
+}

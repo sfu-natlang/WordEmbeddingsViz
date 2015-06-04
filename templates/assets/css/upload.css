@@ -6,7 +6,7 @@ body {
 .form-upload {
     padding: 15px;
     margin: 0 auto;
-    max-width: 440px;
+    max-width: 640px;
 }
 
 .form-heading {
@@ -37,6 +37,11 @@ body {
     border-bottom: 1px solid #d7d7d7;
     padding: 3px;
 }
+
+.form-sub-group {
+    padding: 3px;
+}
+
 .form-group input {
     position: absolute;
     top: 0px;
@@ -55,3 +60,7 @@ body {
     margin: auto;
 }
 
+.row {
+    margin-right: 0px;
+    margin-left: 0px;
+}

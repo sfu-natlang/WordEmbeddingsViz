@@ -31,100 +31,134 @@
             {% csrf_token %}
             {{ form.non_field_errors }}
 
-            <div class="form-group">
-                <div class="form-labels">
-                    <div class="form-label">
-                        {{ form.lang1EmbeddingFile.label_tag }}
+            <div class="form-group row">
+                <div class="form-sub-group col-md-4">
+                    <div class="form-labels">
+                        <div class="form-label">
+                            {{ form.lang1EmbeddingFile.label_tag }}
+                        </div>
                     </div>
-                    <div class="form-help">
-                        {{ form1.lang1EmbeddingFile.help_text }}
-                    </div>
+
+                    {% if form.lang1EmbeddingFile.errors %}
+                        {% for error in form.lang1EmbeddingFile.errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ error|escape }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <span class="btn btn-success fileinput-button">
+                        <span>Add Lang1 Embedding File</span>
+                            {{ form.lang1EmbeddingFile }}
+                    </span>
                 </div>
 
-                {% if form.lang1EmbeddingFile.errors %}
-                    {% for error in form.lang1EmbeddingFile.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {{ error|escape }}
+                <div class="form-sub-group  col-md-4">
+                    <div class="form-labels">
+                        <div class="form-label">
+                            {{ form.lang1WordsFile.label_tag }}
                         </div>
-                    {% endfor %}
-                {% endif %}
+                    </div>
 
-                <span class="btn btn-success fileinput-button">
-                    <span>Add Lang1 Embedding File</span>
-                        {{ form.lang1EmbeddingFile }}
-                </span>
+                    {% if form.lang1WordsFile.errors %}
+                        {% for error in form.lang1WordsFile.errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ error|escape }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <span class="btn btn-success fileinput-button">
+                        <span>Add Lang1 Word File</span>
+                            {{ form.lang1WordsFile }}
+                    </span>
+                </div>
+
+                <div class="form-sub-group  col-md-4">
+                    <div class="form-labels">
+                        <div class="form-label">
+                            {{ form.lang1DataFile.label_tag }}
+                        </div>
+                    </div>
+
+                    {% if form.lang1DataFile.errors %}
+                    {% for error in form.lang1DataFile.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error|escape }}
+                    </div>
+                    {% endfor %}
+                    {% endif %}
+
+                    <span class="btn btn-success fileinput-button">
+                        <span>Add Lang1 Data File</span>
+                            {{ form.lang1DataFile }}
+                    </span>
+                </div>
             </div>
 
-            <div class="form-group">
-                <div class="form-labels">
-                    <div class="form-label">
-                        {{ form.lang1WordsFile.label_tag }}
+            <div class="form-group row">
+                <div class="form-sub-group col-md-4">
+                    <div class="form-labels">
+                        <div class="form-label">
+                            {{ form.lang2EmbeddingFile.label_tag }}
+                        </div>
                     </div>
-                    <div class="form-help">
-                        {{ form1.lang1WordsFile.help_text }}
-                    </div>
+
+                    {% if form.lang2EmbeddingFile.errors %}
+                        {% for error in form.lang2EmbeddingFile.errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ error|escape }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <span class="btn btn-success fileinput-button">
+                        <span>Add Lang2 Embedding File</span>
+                            {{ form.lang2EmbeddingFile }}
+                    </span>
                 </div>
 
-                {% if form.lang1WordsFile.errors %}
-                    {% for error in form.lang1WordsFile.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {{ error|escape }}
+                <div class="form-sub-group col-md-4">
+                    <div class="form-labels">
+                        <div class="form-label">
+                            {{ form.lang2WordsFile.label_tag }}
                         </div>
-                    {% endfor %}
-                {% endif %}
-
-                <span class="btn btn-success fileinput-button">
-                    <span>Add Lang1 Word File</span>
-                        {{ form.lang1WordsFile }}
-                </span>
-            </div>
-
-            <div class="form-group">
-                <div class="form-labels">
-                    <div class="form-label">
-                        {{ form.lang2EmbeddingFile.label_tag }}
                     </div>
-                    <div class="form-help">
-                        {{ form1.lang2EmbeddingFile.help_text }}
-                    </div>
+
+                    {% if form.lang2WordsFile.errors %}
+                        {% for error in form.lang2WordsFile.errors %}
+                            <div class="alert alert-danger" role="alert">
+                                {{ error|escape }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+
+                    <span class="btn btn-success fileinput-button">
+                        <span>Add Lang2 Word File</span>
+                        {{ form.lang2WordsFile }}
+                    </span>
                 </div>
 
-                {% if form.lang2EmbeddingFile.errors %}
-                    {% for error in form.lang2EmbeddingFile.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {{ error|escape }}
+                <div class="form-sub-group  col-md-4">
+                    <div class="form-labels">
+                        <div class="form-label">
+                            {{ form.lang2DataFile.label_tag }}
                         </div>
+                    </div>
+
+                    {% if form.lang2DataFile.errors %}
+                    {% for error in form.lang2DataFile.errors %}
+                    <div class="alert alert-danger" role="alert">
+                        {{ error|escape }}
+                    </div>
                     {% endfor %}
-                {% endif %}
+                    {% endif %}
 
-                <span class="btn btn-success fileinput-button">
-                    <span>Add Lang2 Embedding File</span>
-                        {{ form.lang2EmbeddingFile }}
-                </span>
-            </div>
-
-            <div class="form-group">
-                <div class="form-labels">
-                    <div class="form-label">
-                        {{ form.lang2WordsFile.label_tag }}
-                    </div>
-                    <div class="form-help">
-                        {{ form1.lang2WordsFile.help_text }}
-                    </div>
+                    <span class="btn btn-success fileinput-button">
+                        <span>Add Lang2 Data File</span>
+                            {{ form.lang2DataFile }}
+                    </span>
                 </div>
-
-                {% if form.lang2WordsFile.errors %}
-                    {% for error in form.lang2WordsFile.errors %}
-                        <div class="alert alert-danger" role="alert">
-                            {{ error|escape }}
-                        </div>
-                    {% endfor %}
-                {% endif %}
-
-                <span class="btn btn-success fileinput-button">
-                    <span>Add Lang2 Word File</span>
-                    {{ form.lang2WordsFile }}
-                </span>
             </div>
 
 

@@ -1,6 +1,7 @@
-function renderData(jsonData) {
+function renderData(jsonData, tooltipURL) {
     $( "#bilingual-embeddings" ).show( "slow");
-    $("#cluster-render").width($(window).width()-100).height($(window).height());
+    $("#cluster-render").width($(window).width()*0.75).height($(window).height());
+    //$("#word-concordance").width($(window).width()*0.25);
     // configure for module loader
 
     require.config({
@@ -47,6 +48,8 @@ function renderData(jsonData) {
                 },
                 toolbox: {
                     show : true,
+                    x: 'right',
+                    padding: [3,80,0,0],
                     feature : {
                         mark : {
                             show: false,
@@ -233,6 +236,8 @@ function renderData(jsonData) {
                         deleteAlignment(param);
                     }
                 } else if (alignmentEnabled) {
+                    getWordTooltip(param.data[2], param.seriesIndex, tooltipURL);
+
                     var seriesIndex = param.seriesIndex;
                     var seriesName = param.seriesName;
                     var word = param.data[2];
@@ -272,6 +277,8 @@ function renderData(jsonData) {
                     }
                     alignments.push(alignmentObj);
                     
+                } else {
+                    getWordTooltip(param.data[2], param.seriesIndex, tooltipURL);
                 }
             }
 
@@ -322,8 +329,6 @@ function renderData(jsonData) {
             }
 
             myChart.on(ecConfig.EVENT.CLICK, createAlignment);
-            /*var markData = {data: [[{xAxis: 0, yAxis: 5}, {xAxis: 20, yAxis: 5}]]};
-            myChart.addMarkLine(0, markData);*/
         }
 
     );
@@ -376,4 +381,61 @@ function Alignment(){
             return true
         }
     }
+}
+
+function getWordTooltip(word, seriesIndex, tooltipURL) {
+    console.log("GetWordTooltip Called");
+    console.log(tooltipURL);
+
+    if (seriesIndex == "0") {
+        seriesIndex = "LANG1"
+    } else if(seriesIndex == "1") {
+        seriesIndex = "LANG2"
+    }
+    var csrftoken = $.cookie('csrftoken');
+    var text = {word: word, language: seriesIndex};
+    //text = JSON.stringify(text);
+    console.log(text);
+
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!csrfSafeMethod(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrftoken);
+            }
+        }
+    });
+
+    $.ajax ({
+        type: "POST",
+        url: tooltipURL,
+        data: text,
+        dataType: "json",
+        traditional: true,
+        cache: false, //VITAL line: the getJON func does not prevent caching!
+        success: tooltipUpdater
+    });
+}
+
+function tooltipUpdater(result) {
+    console.log(result);
+    var table = '<ol>';
+    result = result['concordance'];
+    for (var i = 0; i < result.length; i++) {
+        table += '<li>' + result[i] + '</li>';
+    }
+    table += '</ol>';
+    console.log(table);
+    $('#word-concordance').html(table);
+
+    $('button[type="clear"]').removeAttr('disabled');
+
+    $('button[type="clear"]').click(function(){
+        $('#word-concordance').html('');
+        $('button[type="clear"]').prop('disabled', true);
+    });
+}
+
+function csrfSafeMethod(method) {
+    // these HTTP methods do not require CSRF protection
+    return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
 }

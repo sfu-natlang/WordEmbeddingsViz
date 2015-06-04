@@ -77,6 +77,49 @@
                 </span>
             </div>
 
+            <div class="form-group">
+                <div class="form-labels">
+                    <div class="form-label">
+                        {{ form.lang1DataFile.label_tag }}
+                    </div>
+                </div>
+
+                {% if form.lang1DataFile.errors %}
+                {% for error in form.lang1DataFile.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error|escape }}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+
+                <span class="btn btn-success fileinput-button">
+                    <span>Add Lang1 Data File</span>
+                    {{ form.lang1DataFile }}
+                </span>
+            </div>
+
+            <div class="form-group">
+                <div class="form-labels">
+                    <div class="form-label">
+                        {{ form.lang2DataFile.label_tag }}
+                    </div>
+                </div>
+
+                {% if form.lang2DataFile.errors %}
+                {% for error in form.lang2DataFile.errors %}
+                <div class="alert alert-danger" role="alert">
+                    {{ error|escape }}
+                </div>
+                {% endfor %}
+                {% endif %}
+
+
+                <span class="btn btn-success fileinput-button">
+                    <span>Add Lang2 Data File</span>
+                    {{ form.lang2DataFile }}
+                </span>
+            </div>
             <input type="submit" class="btn btn-default btn-lg btn-block btn-primary start" value="Upload" /></p>
         </form>
     </div>

@@ -3,12 +3,13 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.http import HttpResponse
-#from cluster.models import Upload
 from cluster.forms import UploadForm
 from cluster.forms import UploadEmbeddingsForm
 from WordEmbeddingsViz.settings import MEDIA_ROOT
+from nltk import word_tokenize
+from collections import defaultdict
+import nltk
 import bhtsne.bhtsne as tsne
-import cPickle as pickle
 
 
 def upload(request):
@@ -18,25 +19,24 @@ def upload(request):
             if not request.session.exists(request.session.session_key):
                 request.session.create()
             print request.session.session_key
-            #lang1EmbeddingFile = Upload(embeddingFile= request.FILES['lang1EmbeddingFile'])
-            #lang1EmbeddingFile.save()
+
             lang1EmbeddingFile = request.FILES['lang1EmbeddingFile']
             saveUploadedFile(lang1EmbeddingFile, 'LANG1EMBEDDINGS', request.session.session_key)
 
-            #lang1WordsFile = Upload(embeddingFile= request.FILES['lang1WordsFile'])
-            #lang1WordsFile.save()
             lang1WordsFile = request.FILES['lang1WordsFile']
             saveUploadedFile(lang1WordsFile, 'LANG1WORDS', request.session.session_key)
 
-            #lang2EmbeddingFile = Upload(embeddingFile= request.FILES['lang2EmbeddingFile'])
-            #lang2EmbeddingFile.save()
+            lang1DataFile = request.FILES['lang1DataFile']
+            saveUploadedFile(lang1DataFile, 'LANG1DATA', request.session.session_key)
+
             lang2EmbeddingFile = request.FILES['lang2EmbeddingFile']
             saveUploadedFile(lang2EmbeddingFile, 'LANG2EMBEDDINGS', request.session.session_key)
 
-            #lang2WordsFile = Upload(embeddingFile= request.FILES['lang2WordsFile'])
-            #lang2WordsFile.save()
             lang2WordsFile = request.FILES['lang2WordsFile']
             saveUploadedFile(lang2WordsFile, 'LANG2WORDS', request.session.session_key)
+
+            lang2DataFile = request.FILES['lang2DataFile']
+            saveUploadedFile(lang2DataFile, 'LANG2DATA', request.session.session_key)
 
             request.session['is_pre_calc'] = False
             return HttpResponseRedirect('/cluster')
@@ -61,6 +61,12 @@ def uploadCoordinates(request):
             wordsFile = request.FILES['wordsFile']
             saveUploadedFile(wordsFile, 'PRECAL_WORDS',  request.session.session_key)
 
+            lang1DataFile = request.FILES['lang1DataFile']
+            saveUploadedFile(lang1DataFile, 'LANG1DATA', request.session.session_key)
+
+            lang2DataFile = request.FILES['lang2DataFile']
+            saveUploadedFile(lang2DataFile, 'LANG2DATA', request.session.session_key)
+
             request.session['is_pre_calc'] = True
             return HttpResponseRedirect('/cluster')
     else:
@@ -77,11 +83,14 @@ def cluster(request):
 
 def executeClustering(request):
     isPreCalc = request.session.get('is_pre_calc', False)
+    request.session['lang1Concordance'] = loadLangConcordance('LANG1DATA', request.session.session_key)
+    request.session['lang2Concordance'] = loadLangConcordance('LANG2DATA', request.session.session_key)
+
     if isPreCalc:
         print 'EXECUTING CLUSTERING - PRECALCULATED'
-        request.session['done'] = True
         request.session['words'] = readPreCalcWords(request.session.session_key)
         request.session['coordinates'] = readPreCalcCoordinates(request.session.session_key)
+        request.session['done'] = True
     else:
         clusterThread = tsneThreadClass("tsneThread-"+request.session.session_key, request.session.session_key)
         clusterThread.start()
@@ -112,6 +121,25 @@ def getData(request):
         return HttpResponse(jsonStr, content_type='application/javascript')
     else:
         result = {'done': False}
+        jsonStr = json.dumps(result)
+        return HttpResponse(jsonStr, content_type='application/javascript')
+
+
+def getLangConcordance(request):
+    print 'REQUESTING CONCORDANCE'
+    if request.method == 'POST':
+        word = request.POST.get('word')
+        language = request.POST.get('language')
+
+        if language == 'LANG1':
+            concordanceIndex = request.session['lang1Concordance']
+        elif language == 'LANG2':
+            concordanceIndex = request.session['lang2Concordance']
+
+        concordance = getConcordance(word, concordanceIndex['tokens'], concordanceIndex['offsets'])
+        print concordance
+
+        result = {'concordance': concordance}
         jsonStr = json.dumps(result)
         return HttpResponse(jsonStr, content_type='application/javascript')
 
@@ -237,3 +265,62 @@ def readPreCalcCoordinates(sessionKey):
                 result.append([float(lineSplit[0].strip()), float(lineSplit[1].strip())])
     return result
 
+
+def loadLangConcordance(fileName, sessionKey):
+    """
+    The functionality of this function has been copied over from
+    NLTK ConcordanceIndex.
+    """
+    print 'READING CONCONDANCE - ' + fileName
+    folderName = MEDIA_ROOT+'/'+sessionKey+'/'
+    if not os.path.exists(folderName):
+        return None
+
+    result = ''
+    with open(folderName+fileName) as inFile:
+        for line in inFile:
+            line = line.strip('\r\n').strip()
+            if line:
+                result += line + ' '
+
+    tokens = word_tokenize(result.decode('utf8').lower())
+    offsets = defaultdict(list)
+    for index, word in enumerate(tokens):
+        offsets[word.lower()].append(index)
+
+    return {'tokens': tokens, 'offsets': offsets}
+
+
+def getConcordance(word, tokens, offsets, width=75, lines=25):
+    """
+    This function is copied from print_concordance function in NLTK
+    """
+
+    word = word.encode('utf-8').decode('utf-8')
+
+    half_width = (width - len(word) - 2) // 2
+    context = width // 4 # approx number of words of context
+
+    offsets = getOffsets(offsets, word)
+
+    result = []
+    if offsets:
+        lines = min(lines, len(offsets))
+        for i in offsets:
+            if lines <= 0:
+                break
+            left = (' ' * half_width +
+                    ' '.join(tokens[i-context:i]))
+            right = ' '.join(tokens[i+1:i+context])
+            left = left[-half_width:]
+            right = right[:half_width]
+            result.append(left.strip() + ' ' + tokens[i].strip() + ' ' + right.strip())
+            lines -= 1
+    return result
+
+
+def getOffsets(offsets, word):
+    if word.lower() in offsets:
+        return offsets[word.lower()]
+    else:
+        return []
