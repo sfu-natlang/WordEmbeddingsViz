@@ -34,6 +34,6 @@ div.tooltip {
     margin-top: 60px;
 }
 
-.word-concordance {
-    min-height: 50px;
+#word-concordance {
+    min-height: 100px;
 }

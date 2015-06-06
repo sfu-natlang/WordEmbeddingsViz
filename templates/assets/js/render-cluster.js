@@ -23,6 +23,8 @@ function renderData(jsonData, tooltipURL) {
             // Initialize after dom ready
             var myChart = ec.init(document.getElementById('cluster-render'));
 
+            var previousTooltipWord = null;
+
             option = {
                 tooltip : {
                     trigger: 'item',
@@ -39,6 +41,10 @@ function renderData(jsonData, tooltipURL) {
                         if(params.name.indexOf('Markline') === 0) {
                             return 'Alignment';
                         } else {
+                            if (null == previousTooltipWord || params.value[2] != previousTooltipWord) {
+                                previousTooltipWord = params.value[2];
+                                getWordTooltip(params.value[2], params.seriesIndex, tooltipURL);
+                            }
                             return params.value[2];
                         }
                     }
@@ -236,7 +242,7 @@ function renderData(jsonData, tooltipURL) {
                         deleteAlignment(param);
                     }
                 } else if (alignmentEnabled) {
-                    getWordTooltip(param.data[2], param.seriesIndex, tooltipURL);
+                    //getWordTooltip(param.data[2], param.seriesIndex, tooltipURL);
 
                     var seriesIndex = param.seriesIndex;
                     var seriesName = param.seriesName;
@@ -278,7 +284,7 @@ function renderData(jsonData, tooltipURL) {
                     alignments.push(alignmentObj);
                     
                 } else {
-                    getWordTooltip(param.data[2], param.seriesIndex, tooltipURL);
+                    //getWordTooltip(param.data[2], param.seriesIndex, tooltipURL);
                 }
             }
 
@@ -387,6 +393,12 @@ function getWordTooltip(word, seriesIndex, tooltipURL) {
     console.log("GetWordTooltip Called");
     console.log(tooltipURL);
 
+    //clear html
+    $('#word-concordance').html('');
+
+    //Create spinner
+    loadSpinner("word-concordance", true);
+
     if (seriesIndex == "0") {
         seriesIndex = "LANG1"
     } else if(seriesIndex == "1") {
@@ -418,16 +430,24 @@ function getWordTooltip(word, seriesIndex, tooltipURL) {
 
 function tooltipUpdater(result) {
     console.log(result);
-    var table = '<ol>';
-    result = result['concordance'];
-    for (var i = 0; i < result.length; i++) {
-        table += '<li>' + result[i] + '</li>';
-    }
-    table += '</ol>';
-    console.log(table);
-    $('#word-concordance').html(table);
 
-    $('button[type="clear"]').removeAttr('disabled');
+    result = result['concordance'];
+
+    //stop spinner and show table
+    loadSpinner("word-concordance", false);
+
+    if(result.length == 0) {
+        $('#word-concordance').html('');
+        $('button[type="clear"]').prop('disabled', true);
+    } else {
+        var table = '<ol>';
+        for (var i = 0; i < result.length; i++) {
+            table += '<li>' + result[i] + '</li>';
+        }
+        table += '</ol>';
+        $('#word-concordance').html(table);
+        $('button[type="clear"]').removeAttr('disabled');
+    }
 
     $('button[type="clear"]').click(function(){
         $('#word-concordance').html('');
@@ -438,4 +458,39 @@ function tooltipUpdater(result) {
 function csrfSafeMethod(method) {
     // these HTTP methods do not require CSRF protection
     return (/^(GET|HEAD|OPTIONS|TRACE)$/.test(method));
+}
+
+var spinner;
+var spinTargetDiv;
+function loadSpinner(divName, start) {
+
+    var opts = {
+        lines: 11 // The number of lines to draw
+        , length: 28 // The length of each line
+        , width: 2 // The line thickness
+        , radius: 10 // The radius of the inner circle
+        , scale: 0.5 // Scales overall size of the spinner
+        , corners: 1 // Corner roundness (0..1)
+        , color: '#000' // #rgb or #rrggbb or array of colors
+        , opacity: 0.25 // Opacity of the lines
+        , rotate: 0 // The rotation offset
+        , direction: 1 // 1: clockwise, -1: counterclockwise
+        , speed: 1 // Rounds per second
+        , trail: 60 // Afterglow percentage
+        , fps: 20 // Frames per second when using setTimeout() as a fallback for CSS
+        , zIndex: 2e9 // The z-index (defaults to 2000000000)
+        , className: 'spinner' // The CSS class to assign to the spinner
+        , top: '50%' // Top position relative to parent
+        , left: '50%' // Left position relative to parent
+        , shadow: false // Whether to render a shadow
+        , hwaccel: false // Whether to use hardware acceleration
+        , position: 'absolute' // Element positioning
+    };
+    if (start == true) {
+        spinTargetDiv = document.getElementById(divName);
+        spinner = new Spinner(opts).spin(spinTargetDiv);
+    } else {
+        spinner.stop();
+    }
+
 }
