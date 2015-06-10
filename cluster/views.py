@@ -1,4 +1,4 @@
-import os, threading, time, json
+import os, threading, time, json, operator
 from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
@@ -10,6 +10,7 @@ from nltk import word_tokenize
 from collections import defaultdict
 import nltk
 import bhtsne.bhtsne as tsne
+import sys
 
 
 def upload(request):
@@ -83,8 +84,9 @@ def cluster(request):
 
 def executeClustering(request):
     isPreCalc = request.session.get('is_pre_calc', False)
-    request.session['lang1Concordance'] = loadLangConcordance('LANG1DATA', request.session.session_key)
-    request.session['lang2Concordance'] = loadLangConcordance('LANG2DATA', request.session.session_key)
+    request.session['lang1Concordance'], request.session['vocabPOS'], request.session['vocabCount'] = \
+        loadLangConcordance('LANG1DATA', True, request.session.session_key)
+    request.session['lang2Concordance'] = loadLangConcordance('LANG2DATA', False, request.session.session_key)
 
     if isPreCalc:
         print 'EXECUTING CLUSTERING - PRECALCULATED'
@@ -113,10 +115,23 @@ def getData(request):
     if isItDone:
         words = request.session.get('words', None)
         coordinates = request.session.get('coordinates', None)
+        vocabPOS = request.session.get('vocabPOS', None)
+        vocabCount = request.session.get('vocabCount', None)
+        finalVocabPOS = filterVocabByCount(vocabCount, vocabPOS, 100)
+
+        data = {}
         result = {}
+        posVocab = defaultdict(list)
         for i, ((lang, word), coordinate) in enumerate(zip(words, coordinates)):
-            result[i] = {'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang}
+            data[i] = {'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang}
+            if word.lower() in finalVocabPOS:
+                pos = finalVocabPOS[word.lower()]
+                posVocab[pos].append({'x': coordinate[0], 'y': coordinate[1], 'word': word})
+
+        result['data'] = data
         result['done'] = True
+        result['posVocab'] = posVocab
+
         jsonStr = json.dumps(result)
         return HttpResponse(jsonStr, content_type='application/javascript')
     else:
@@ -266,7 +281,7 @@ def readPreCalcCoordinates(sessionKey):
     return result
 
 
-def loadLangConcordance(fileName, sessionKey):
+def loadLangConcordance(fileName, isPOSAvail, sessionKey):
     """
     The functionality of this function has been copied over from
     NLTK ConcordanceIndex.
@@ -276,19 +291,68 @@ def loadLangConcordance(fileName, sessionKey):
     if not os.path.exists(folderName):
         return None
 
-    result = ''
-    with open(folderName+fileName) as inFile:
-        for line in inFile:
-            line = line.strip('\r\n').strip()
-            if line:
-                result += line + ' '
 
-    tokens = word_tokenize(result.decode('utf8').lower())
+    tokens = []
     offsets = defaultdict(list)
-    for index, word in enumerate(tokens):
-        offsets[word.lower()].append(index)
 
-    return {'tokens': tokens, 'offsets': offsets}
+    with open(folderName+fileName) as inFile:
+        if isPOSAvail:
+            vocabPOS = {}
+            vocabCount = defaultdict(int)
+            tokenIndex = 0
+            for index, line in enumerate(inFile):
+                if (index%10000) == 0:
+                    print index
+                line = line.strip('\r\n').strip()
+                lineSplit = line.split(' ')
+                for tokenPOS in lineSplit:
+                    tokenPOSSplit = tokenPOS.strip().split('_', 1)
+                    if tokenPOSSplit[0] == '' and tokenPOSSplit[1].startswith('_'):
+                        token = tokenPOSSplit[1][:-2]
+                        pos = tokenPOSSplit[1][-2:]
+                    elif not(tokenPOSSplit[0] == ''):
+                        token = tokenPOSSplit[0]
+                        pos = tokenPOSSplit[1]
+                    if pos.startswith('NN'):
+                        pos = 'NN'
+                    elif pos.startswith('JJ'):
+                        pos = 'JJ'
+                    elif pos.startswith('RB'):
+                        pos = 'RB'
+                    elif pos.startswith('VB'):
+                        pos = 'VB'
+                    tokens.append(token)
+                    offsets[token].append(tokenIndex)
+                    vocabPOS[token] = pos
+                    vocabCount[token] += 1
+                    tokenIndex += 1
+
+            print tokens[:2000]
+            print len(vocabPOS)
+            print len(vocabCount)
+        else:
+            result = ''
+            for index, line in enumerate(inFile):
+                if index%10000 == 0:
+                    print index
+                line = line.strip('\r\n').strip()
+                if line:
+                    result += line + ' '
+
+            print 'TOKENIZING & CREATING OFFSETS'
+            tokens = word_tokenize(result.decode('utf8').lower())
+            offsets = defaultdict(list)
+            for index, word in enumerate(tokens):
+                offsets[word.lower()].append(index)
+
+    print len(tokens)
+    print len(offsets)
+    print 'RETURNING FROM LOAD CONCORDANCE'
+
+    if isPOSAvail:
+        return {'tokens': tokens, 'offsets': offsets}, vocabPOS, vocabCount
+    else:
+        return {'tokens': tokens, 'offsets': offsets}
 
 
 def getConcordance(word, tokens, offsets, width=75, lines=25):
@@ -324,3 +388,23 @@ def getOffsets(offsets, word):
         return offsets[word.lower()]
     else:
         return []
+
+
+def filterVocabByCount(vocabCount, vocabPOS, numPerPOS):
+    sortedVocabCount = sorted(vocabCount.items(), key=operator.itemgetter(1), reverse=True)
+    countOfEachPOS = defaultdict(int)
+    result = {}
+    posCount = len(set(vocabPOS.values()))
+    for token, count in sortedVocabCount:
+        pos = vocabPOS[token]
+        if countOfEachPOS[pos] <= numPerPOS:
+            result[token] = pos
+            countOfEachPOS[pos] += 1
+
+        limitPOS = 0
+        for posCount in countOfEachPOS.values():
+            if posCount == numPerPOS:
+                limitPOS += 1
+        if limitPOS == posCount:
+            break
+    return result

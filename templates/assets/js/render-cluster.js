@@ -41,11 +41,11 @@ function renderData(jsonData, tooltipURL) {
                         if(params.name.indexOf('Markline') === 0) {
                             return 'Alignment';
                         } else {
-                            if (null == previousTooltipWord || params.value[2] != previousTooltipWord) {
-                                previousTooltipWord = params.value[2];
-                                getWordTooltip(params.value[2], params.seriesIndex, tooltipURL);
+                            if (null == previousTooltipWord || params.name != previousTooltipWord) {
+                                previousTooltipWord = params.name;
+                                //getWordTooltip(params.name, params.seriesIndex, tooltipURL);
                             }
-                            return params.value[2];
+                            return params.name;
                         }
                     }
                 },
@@ -163,19 +163,22 @@ function renderData(jsonData, tooltipURL) {
                                 label: {
                                     show: true,
                                     formatter : function (params) {
-                                        return params.value[2];
+                                        return params.name;
                                     }
                                 }
                             }
                         },
                         data: (function () {
                             var d = [];
-                            for(var key in jsonData) {
-                                if (key == "done") {
-                                    continue;
-                                }
-                                if (jsonData[key].lang == "lang1") {
-                                    d.push([jsonData[key].x, jsonData[key].y, jsonData[key].word]);
+                            for(var key in jsonData.data) {
+                                if (jsonData.data[key].lang == "lang1") {
+                                    //d.push([jsonData.data[key].x, jsonData.data[key].y, jsonData.data[key].word]);
+                                    d.push(
+                                        {
+                                            value: [jsonData.data[key].x, jsonData.data[key].y],
+                                            name: jsonData.data[key].word
+                                        }
+                                    );
                                 }
                             }
                             return d;
@@ -205,7 +208,7 @@ function renderData(jsonData, tooltipURL) {
                                 label : {
                                     show: true,
                                     formatter : function (params) {
-                                        return params.value[2];
+                                        return params.name;
                                     }
                                     //formatter : '{b}'
                                 }
@@ -213,12 +216,15 @@ function renderData(jsonData, tooltipURL) {
                         },
                         data: (function () {
                             var d = [];
-                            for(var key in jsonData) {
-                                if (key == "done") {
-                                    continue;
-                                }
-                                if (jsonData[key].lang == "lang2") {
-                                    d.push([jsonData[key].x, jsonData[key].y, jsonData[key].word]);
+                            for(var key in jsonData.data) {
+                                if (jsonData.data[key].lang == "lang2") {
+                                    //d.push([jsonData.data[key].x, jsonData.data[key].y, jsonData.data[key].word]);
+                                    d.push(
+                                        {
+                                            value: [jsonData.data[key].x, jsonData.data[key].y],
+                                            name: jsonData.data[key].word
+                                        }
+                                    );
                                 }
                             }
                             //console.log(d)
@@ -246,10 +252,10 @@ function renderData(jsonData, tooltipURL) {
 
                     var seriesIndex = param.seriesIndex;
                     var seriesName = param.seriesName;
-                    var word = param.data[2];
+                    var word = param.name;
                     var dataIndex = param.dataIndex;
-                    var xCoord = param.data[0];
-                    var yCoord = param.data[1];
+                    var xCoord = param.value[0];
+                    var yCoord = param.value[1];
 
                     var alignmentObj = alignments.pop();
                     if (null != alignmentObj) {
