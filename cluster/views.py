@@ -122,12 +122,15 @@ def getData(request):
         data = {}
         result = {}
         posVocab = defaultdict(list)
+        addedWords = defaultdict(list)
         for i, ((lang, word), coordinate) in enumerate(zip(words, coordinates)):
             data[i] = {'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang}
             if word.lower() in finalVocabPOS:
                 pos = finalVocabPOS[word.lower()]
-                posVocab[pos].append({'x': coordinate[0], 'y': coordinate[1], 'word': word})
-
+                if word.lower() not in addedWords[pos]:
+                    addedWords[pos].append(word.lower())
+                    posVocab[pos].append({'x': coordinate[0], 'y': coordinate[1], 'word': word})
+        
         result['data'] = data
         result['done'] = True
         result['posVocab'] = posVocab
@@ -321,10 +324,10 @@ def loadLangConcordance(fileName, isPOSAvail, sessionKey):
                         pos = 'RB'
                     elif pos.startswith('VB'):
                         pos = 'VB'
-                    tokens.append(token)
-                    offsets[token].append(tokenIndex)
-                    vocabPOS[token] = pos
-                    vocabCount[token] += 1
+                    tokens.append(token.lower())
+                    offsets[token.lower()].append(tokenIndex)
+                    vocabPOS[token.lower()] = pos
+                    vocabCount[token.lower()] += 1
                     tokenIndex += 1
 
             print tokens[:2000]
@@ -397,9 +400,9 @@ def filterVocabByCount(vocabCount, vocabPOS, numPerPOS):
     posCount = len(set(vocabPOS.values()))
     for token, count in sortedVocabCount:
         pos = vocabPOS[token]
-        if countOfEachPOS[pos] <= numPerPOS:
+        if countOfEachPOS[pos] < numPerPOS+1:
             result[token] = pos
-            countOfEachPOS[pos] += 1
+            countOfEachPOS[pos] = countOfEachPOS[pos] + 1
 
         limitPOS = 0
         for posCount in countOfEachPOS.values():

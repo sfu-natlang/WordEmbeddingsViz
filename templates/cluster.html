@@ -15,6 +15,7 @@
 <script type="text/javascript" src="{% static 'js/spin.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/echarts.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/FileSaver.min.js' %}"></script>
+<script type="text/javascript" src="{% static 'js/bootstrap.min.js' %}"></script>
 <script type="text/javascript" src="{% static 'js/render-cluster.js' %}"></script>
 
 
@@ -106,12 +107,52 @@
                     </div>
                 </div>
                 <div class="col-lg-3">
-                    <div class="chart-title">
-                        Concordance
+                    <div class="row">
+                        <div class="chart-title">
+                            Top 100 Words per POS
+                        </div>
+                        <div class="chart-stage pos-vocab-box">
+                            <div id="pos-vocab"></div>
+                            <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading" role="tab" id="headingOne">
+                                        <h4 class="panel-title">
+                                            <a data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                                Collapsible Group Item #1
+                                            </a>
+                                        </h4>
+                                    </div>
+                                    <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+                                        <div class="panel-body">
+                                            <ol>
+                                                <li>1</li>
+                                                <li>2</li>
+                                                <li>3</li>
+                                                <li>4</li>
+                                                <li>5</li>
+                                                <li>6</li>
+                                                <li>7</li>
+                                                <li>8</li>
+                                                <li>9</li>
+                                                <li>10</li>
+                                                <li>11</li>
+                                                <li>12</li>
+                                                <li>13</li>
+                                            </ol>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="chart-stage concordance-box">
-                        <div id="word-concordance"></div>
-                        <button type="clear" class="btn btn-default btn-block btn-primary start" disabled>Clear Concordance</button>
+                    <div class="row">
+                        <div class="chart-title">
+                            Concordance
+                        </div>
+                        <div class="chart-stage concordance-box">
+                            <div id="word-concordance"></div>
+                            <button type="clear" class="btn btn-default btn-block btn-primary start" disabled>Clear Concordance</button>
+                        </div>    
                     </div>
                 </div>
             </div>

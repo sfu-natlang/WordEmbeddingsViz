@@ -238,6 +238,8 @@ function renderData(jsonData, tooltipURL) {
             myChart.setOption(option);
 
             var ecConfig = require('echarts/config');
+            
+            myChart.on(ecConfig.EVENT.CLICK, createAlignment);
 
             var alignments = [];
 
@@ -340,7 +342,7 @@ function renderData(jsonData, tooltipURL) {
 
             }
 
-            myChart.on(ecConfig.EVENT.CLICK, createAlignment);
+            renderVocabPOSList(jsonData.posVocab);
         }
 
     );
@@ -499,4 +501,11 @@ function loadSpinner(divName, start) {
         spinner.stop();
     }
 
+}
+
+function renderVocabPOSList(data) {
+    for(var key in data) {
+        console.log(key);
+        console.log(data[key]);
+    }
 }
