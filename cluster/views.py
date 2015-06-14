@@ -68,6 +68,11 @@ def uploadCoordinates(request):
             lang2DataFile = request.FILES['lang2DataFile']
             saveUploadedFile(lang2DataFile, 'LANG2DATA', request.session.session_key)
 
+            if 'alignmentFile' in request.FILES:
+                alignmentFile = request.FILES['alignmentFile']
+                saveUploadedFile(alignmentFile, 'ALIGNMENTDATA', request.session.session_key)
+                request.session['align_avail'] = True
+
             request.session['is_pre_calc'] = True
             return HttpResponseRedirect('/cluster')
     else:
@@ -87,6 +92,9 @@ def executeClustering(request):
     request.session['lang1Concordance'], request.session['vocabPOS'], request.session['vocabCount'] = \
         loadLangConcordance('LANG1DATA', True, request.session.session_key)
     request.session['lang2Concordance'] = loadLangConcordance('LANG2DATA', False, request.session.session_key)
+
+    if request.session.get('align_avail', False):
+        request.session['previousAlignments'] = loadPreviousAlignments('ALIGNMENTDATA', request.session.session_key)
 
     if isPreCalc:
         print 'EXECUTING CLUSTERING - PRECALCULATED'
@@ -119,10 +127,24 @@ def getData(request):
         vocabCount = request.session.get('vocabCount', None)
         finalVocabPOS = filterVocabByCount(vocabCount, vocabPOS, 100)
 
+        previousAlignmentData = request.session.get('previousAlignments', None)
+        lang1AlignedWordList = []
+        lang2AlignedWordList = []
+        lang1AlignedWordData = {}
+        lang2AlignedWordData = {}
+        if previousAlignmentData:
+            print 'WE HAVE ALIGNMENTS'
+            print previousAlignmentData
+            lang1AlignedWordList += previousAlignmentData.keys()
+            lang2AlignedWordList += [word for val in previousAlignmentData.values() for word in val]
+
+
         data = {}
         result = {}
         posVocab = defaultdict(list)
         addedWords = defaultdict(list)
+        previousAlignments = []
+
         for i, ((lang, word), coordinate) in enumerate(zip(words, coordinates)):
             data[i] = {'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang}
             if word.lower() in finalVocabPOS:
@@ -130,10 +152,25 @@ def getData(request):
                 if word.lower() not in addedWords[pos]:
                     addedWords[pos].append(word.lower())
                     posVocab[pos].append({'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang})
-        
+
+            if word.lower() in lang1AlignedWordList and lang == 'lang1':
+                lang1AlignedWordData[word.lower()] = {'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang}
+            elif word.lower() in lang2AlignedWordList and lang == 'lang2':
+                lang2AlignedWordData[word.lower()] = {'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang}
+
+        if previousAlignmentData:
+            for key, value in previousAlignmentData.iteritems():
+                keyData = lang1AlignedWordData[key]
+                for word in value:
+                    valueData = lang2AlignedWordData[word]
+                    previousAlignments.append([keyData, valueData])
+
         result['data'] = data
         result['done'] = True
         result['posVocab'] = posVocab
+        if previousAlignmentData:
+            print previousAlignments
+            result['previousAlignments'] = previousAlignments
 
         jsonStr = json.dumps(result)
         return HttpResponse(jsonStr, content_type='application/javascript')
@@ -343,7 +380,6 @@ def loadLangConcordance(fileName, isPOSAvail, sessionKey):
                         vocabPOS[token.lower()] = pos
                         vocabCount[token.lower()] += 1
 
-            print tokens[:2000]
             print len(vocabPOS)
             print len(vocabCount)
         else:
@@ -423,4 +459,22 @@ def filterVocabByCount(vocabCount, vocabPOS, numPerPOS):
                 limitPOS += 1
         if limitPOS == posCount:
             break
+    return result
+
+
+def loadPreviousAlignments(fileName, sessionKey):
+    print 'READING ALIGNMENT DATA'
+    folderName = MEDIA_ROOT+'/'+sessionKey+'/'
+    if not os.path.exists(folderName):
+        return None
+
+    result = defaultdict(list)
+    with open(folderName+fileName) as inFile:
+        for line in inFile:
+            line = line.decode('utf-8-sig').strip('\r\n')
+            if line:
+                print line
+                lineSplit = line.split('\t')
+                result[lineSplit[0].strip()].append(lineSplit[1].strip())
+    print result
     return result

@@ -255,8 +255,6 @@ function renderData(jsonData, tooltipURL) {
             
             myChart.on(ecConfig.EVENT.CLICK, createAlignment);
 
-            myChart.on(ecConfig.EVENT.TIMELINE_CHANGED, zoomChangedListener);
-
             var alignments = [];
 
             function createAlignment(param) {
@@ -271,7 +269,6 @@ function renderData(jsonData, tooltipURL) {
                     var seriesIndex = param.seriesIndex;
                     var seriesName = param.seriesName;
                     var word = param.name;
-                    var dataIndex = param.dataIndex;
                     var xCoord = param.value[0];
                     var yCoord = param.value[1];
 
@@ -284,7 +281,7 @@ function renderData(jsonData, tooltipURL) {
                     } else {
                         alignmentObj = new Alignment();
                     }
-                    var wordObj = new Word(word, seriesIndex, seriesName, dataIndex, xCoord, yCoord);
+                    var wordObj = new Word(word, seriesIndex, seriesName, xCoord, yCoord);
                     if (alignmentObj.canAddWord(wordObj)) {
                         alignmentObj.addWord(wordObj);
                     } else {
@@ -358,10 +355,39 @@ function renderData(jsonData, tooltipURL) {
 
             }
 
+            function createPreviousAlignment() {
+                alignmentEnabled = true;
+                console.log(jsonData.previousAlignments);
+                for (var index in jsonData.previousAlignments) {
+                    var alignmentArray = jsonData.previousAlignments[index];
+                    for (var i in alignmentArray) {
+                        var word = alignmentArray[i];
+                        var paramObj = {};
+
+                        paramObj.name = word.word;
+                        if (word.lang == 'lang1') {
+                            paramObj.seriesIndex = 0;
+                            paramObj.seriesName = 'English';
+                        } else if (word.lang == 'lang2') {
+                            paramObj.seriesIndex = 1;
+                            paramObj.seriesName = 'Chinese';
+                        }
+                        paramObj.value = [];
+                        paramObj.value.push(word.x);
+                        paramObj.value.push(word.y);
+                        console.log(paramObj);
+
+                        createAlignment(paramObj);
+                    }
+
+                }
+                alignmentEnabled = false;
+            }
+
             renderVocabPOSList(jsonData.posVocab, myChart);
 
-            function zoomChangedListener(param) {
-                console.log(param);
+            if('previousAlignments' in jsonData) {
+                createPreviousAlignment();
             }
         }
 
@@ -369,11 +395,10 @@ function renderData(jsonData, tooltipURL) {
 
 }
 
-function Word(word, seriesIndex, seriesName, dataIndex, xCoord, yCoord) {
+function Word(word, seriesIndex, seriesName, xCoord, yCoord) {
     this.word = word;
     this.seriesIndex = seriesIndex;
     this.seriesName = seriesName;
-    this.dataIndex = dataIndex;
     this.xCoord = xCoord;
     this.yCoord = yCoord;
 }
@@ -418,9 +443,6 @@ function Alignment(){
 }
 
 function getWordTooltip(word, seriesIndex, tooltipURL) {
-    console.log("GetWordTooltip Called");
-    console.log(tooltipURL);
-
     //clear html
     $('#word-concordance').html('');
 
@@ -435,7 +457,6 @@ function getWordTooltip(word, seriesIndex, tooltipURL) {
     var csrftoken = $.cookie('csrftoken');
     var text = {word: word, language: seriesIndex};
     //text = JSON.stringify(text);
-    console.log(text);
 
     $.ajaxSetup({
         beforeSend: function(xhr, settings) {
@@ -457,8 +478,6 @@ function getWordTooltip(word, seriesIndex, tooltipURL) {
 }
 
 function tooltipUpdater(result) {
-    console.log(result);
-
     result = result['concordance'];
 
     //stop spinner and show table
@@ -599,7 +618,6 @@ function addNewVocabPOSSelection(elementId, chartObj) {
     //chartObj.addData(2, dataPoint, false, true);
 
     //chartObj.restore();
-    console.log(chartObj);
 }
 
 function removePrevVocabPOSSelection(elementId, chartObj) {
@@ -619,5 +637,4 @@ function removePrevVocabPOSSelection(elementId, chartObj) {
     chartObj.delMarkPoint(seriesIdx, word);
     chartObj.refresh();
 
-    console.log(chartObj);
 }
