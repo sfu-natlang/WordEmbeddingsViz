@@ -31,9 +31,20 @@ div.tooltip {
 
 .concordance-box {
     border: 1px solid #e2e2e2;
+    height: 48vh;
+}
+
+.pos-vocab-box {
     margin-top: 60px;
+    height: 25vh;
+    overflow: scroll;
 }
 
 #word-concordance {
-    min-height: 100px;
+    height: 43vh;
+    overflow: scroll;
+}
+
+.vocab-word-select {
+    background-color: rgba(154, 151, 152, 0.50);
 }

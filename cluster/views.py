@@ -129,7 +129,7 @@ def getData(request):
                 pos = finalVocabPOS[word.lower()]
                 if word.lower() not in addedWords[pos]:
                     addedWords[pos].append(word.lower())
-                    posVocab[pos].append({'x': coordinate[0], 'y': coordinate[1], 'word': word})
+                    posVocab[pos].append({'x': coordinate[0], 'y': coordinate[1], 'word': word, 'lang': lang})
         
         result['data'] = data
         result['done'] = True
@@ -324,11 +324,24 @@ def loadLangConcordance(fileName, isPOSAvail, sessionKey):
                         pos = 'RB'
                     elif pos.startswith('VB'):
                         pos = 'VB'
+                    else:
+                        pos = None
+                    # elif pos == 'PRP$':
+                    #     pos = 'PRP'
+                    # elif pos == ',':
+                    #     pos = 'COMMA'
+                    # elif pos == ':':
+                    #     pos = 'COLON'
+                    # elif pos == '$':
+                    #     pos = 'DOLLAR'
+                    # elif pos == '.':
+                    #     pos = 'DOT'
                     tokens.append(token.lower())
                     offsets[token.lower()].append(tokenIndex)
-                    vocabPOS[token.lower()] = pos
-                    vocabCount[token.lower()] += 1
                     tokenIndex += 1
+                    if pos:
+                        vocabPOS[token.lower()] = pos
+                        vocabCount[token.lower()] += 1
 
             print tokens[:2000]
             print len(vocabPOS)

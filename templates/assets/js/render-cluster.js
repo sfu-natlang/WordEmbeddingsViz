@@ -1,12 +1,13 @@
 function renderData(jsonData, tooltipURL) {
     $( "#bilingual-embeddings" ).show( "slow");
-    $("#cluster-render").width($(window).width()*0.75).height($(window).height());
+    $("#cluster-render").width($(window).width()*0.75).height($(window).height()-60);
     //$("#word-concordance").width($(window).width()*0.25);
     // configure for module loader
 
     require.config({
         paths: {
-            echarts: "assets/js/"
+            echarts: "assets/js/",
+            zrender: "assets/js/"
         }
     });
 
@@ -43,7 +44,9 @@ function renderData(jsonData, tooltipURL) {
                         } else {
                             if (null == previousTooltipWord || params.name != previousTooltipWord) {
                                 previousTooltipWord = params.name;
-                                //getWordTooltip(params.name, params.seriesIndex, tooltipURL);
+                                if(alignmentEnabled) {
+                                    getWordTooltip(params.name, params.seriesIndex, tooltipURL);
+                                }
                             }
                             return params.name;
                         }
@@ -158,6 +161,7 @@ function renderData(jsonData, tooltipURL) {
                         name:'English',
                         type:'scatter',
                         large: true,
+                        z: 5,
                         itemStyle: {
                             normal: {
                                 label: {
@@ -202,6 +206,7 @@ function renderData(jsonData, tooltipURL) {
                     {
                         name:'Chinese',
                         type:'scatter',
+                        z: 5,
                         large: true,
                         itemStyle: {
                             normal : {
@@ -230,7 +235,16 @@ function renderData(jsonData, tooltipURL) {
                             //console.log(d)
                             return d;
                         })()
-                    }
+                    },
+
+                    /*{
+                        name:'MarkpointSeries',
+                        type:'scatter',
+                        z: 2,
+                        large: true,
+                        data: [{value: [0,0]}]
+                    }*/
+
                 ]
             };
 
@@ -240,6 +254,8 @@ function renderData(jsonData, tooltipURL) {
             var ecConfig = require('echarts/config');
             
             myChart.on(ecConfig.EVENT.CLICK, createAlignment);
+
+            myChart.on(ecConfig.EVENT.TIMELINE_CHANGED, zoomChangedListener);
 
             var alignments = [];
 
@@ -342,7 +358,11 @@ function renderData(jsonData, tooltipURL) {
 
             }
 
-            renderVocabPOSList(jsonData.posVocab);
+            renderVocabPOSList(jsonData.posVocab, myChart);
+
+            function zoomChangedListener(param) {
+                console.log(param);
+            }
         }
 
     );
@@ -503,9 +523,101 @@ function loadSpinner(divName, start) {
 
 }
 
-function renderVocabPOSList(data) {
+function renderVocabPOSList(data, myChart) {
     for(var key in data) {
-        console.log(key);
-        console.log(data[key]);
+        var divData = '<div class="panel panel-default">';
+               divData += '<div class="panel-heading" role="tab" id="heading' + key + '">';
+                   divData += '<h4 class="panel-title">';
+                       divData += '<a data-toggle="collapse" data-parent="#accordion" href="#collapse' + key +
+                                      '" aria-expanded="false" aria-controls="collapse'+key+'">';
+                           divData += key;
+                       divData += '</a>';
+                   divData += '</h4>';
+               divData += '</div>';
+               divData += '<div id="collapse'+ key + '" class="panel-collapse collapse" role="tabpanel" ' +
+               'aria-labelledby="heading' + key + '">';
+                   divData += '<div class="panel-body">';
+                       divData += '<ul class="list-unstyled">';
+                           var words = data[key];
+                           for (var i in words) {
+                               divData += '<li id="'+key+'_vocabword_' + i + '" class="vocab-word" data-x="'+ words[i].x
+                               +'" data-y="' + words[i].y + '" data-lang="'+ words[i].lang+'" data-word="'
+                               + words[i].word + '">' + words[i].word + '</li>';
+                           }
+                       divData += '</ul>';
+                   divData += '</div>';
+               divData += '</div>';
+           divData += '</div>';
+        $("#pos-vocab").append(divData);
+
+        $("#collapse"+key).on('click', '.vocab-word', function(d){
+            vocabPOSListClickHandler(myChart, d);
+        });
     }
+}
+
+var vocabIdPrevSelection = null;
+
+function vocabPOSListClickHandler(chartObj, eventObj) {
+    var targetId = eventObj.target.id;
+    if (vocabIdPrevSelection == targetId) {
+        removePrevVocabPOSSelection(targetId, chartObj);
+        vocabIdPrevSelection = null;
+    } else {
+        if (null != vocabIdPrevSelection) {
+            removePrevVocabPOSSelection(vocabIdPrevSelection, chartObj);
+        }
+        addNewVocabPOSSelection(targetId, chartObj);
+        vocabIdPrevSelection = targetId;
+    }
+}
+
+function addNewVocabPOSSelection(elementId, chartObj) {
+    var elementObj = document.getElementById(elementId);
+    elementObj.classList.add("vocab-word-select");
+
+    var xCoord = parseFloat(elementObj.getAttribute('data-x'));
+    var yCoord = parseFloat(elementObj.getAttribute('data-y'));
+    var word = elementObj.getAttribute('data-word');
+    var lang = elementObj.getAttribute('data-lang');
+
+    var seriesIdx;
+    if (lang == 'lang1') {
+        seriesIdx = 0;
+    } else if(lang == 'lang2') {
+        seriesIdx = 1;
+    }
+
+    var markPointData = {data: [{name: word, xAxis: xCoord, yAxis: yCoord}],
+        effect : {show: true, shadowBlur : 0, type: 'bounce',}, symbol:'emptycircle', symbolSize: 10, clickable: false};
+
+    var dataPoint = [xCoord, yCoord];
+
+    chartObj.addMarkPoint(seriesIdx, markPointData);
+    dataPoint = {value: [xCoord, yCoord], name: word};
+
+    //chartObj.addData(2, dataPoint, false, true);
+
+    //chartObj.restore();
+    console.log(chartObj);
+}
+
+function removePrevVocabPOSSelection(elementId, chartObj) {
+    var elementObj = document.getElementById(elementId);
+    elementObj.classList.remove("vocab-word-select");
+
+    var word = elementObj.getAttribute('data-word');
+    var lang = elementObj.getAttribute('data-lang');
+
+    var seriesIdx;
+    if (lang == 'lang1') {
+        seriesIdx = 0;
+    } else if(lang == 'lang2') {
+        seriesIdx = 1;
+    }
+
+    chartObj.delMarkPoint(seriesIdx, word);
+    chartObj.refresh();
+
+    console.log(chartObj);
 }
