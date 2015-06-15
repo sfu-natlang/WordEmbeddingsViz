@@ -69,7 +69,25 @@
         })
 
         window.setTimeout( pull, 1000);
+
+        $('#coordinate-btn').click(function(){
+            console.log('COORDINATE-BTN-CLICK');
+            callDownloadFile('COORDINATES');
+
+        });
+
+        $('#word-btn').click(function(){
+            console.log('WORD-BTN-CLICK');
+            callDownloadFile('WORDS');
+        });
     }); //end ready
+
+    function callDownloadFile(type) {
+        var data = {downloadName: type};
+        $(function(){
+            $("body").append('<iframe src="{% url "download" %}?'+ $.param(data) + '" style="display: none;" ></iframe>');
+        });
+    }
 
 </script>
 
@@ -96,34 +114,36 @@
     </div>
 
     <div id="bilingual-embeddings">
-        <div class="chart-wrapper">
+        <div class="col-lg-9">
+            <div class="chart-title">
+                Bilingual Word Embeddings
+            </div>
+            <div class="chart-stage">
+                <div id="cluster-render"></div>
+            </div>
+        </div>
+        <div class="col-lg-3">
             <div class="row">
-                <div class="col-lg-9">
-                    <div class="chart-title">
-                        Bilingual Word Embeddings
-                    </div>
-                    <div class="chart-stage">
-                        <div id="cluster-render"></div>
-                    </div>
+                <div class="chart-title">
+                    Top 100 Words per POS
                 </div>
-                <div class="col-lg-3">
-                    <div class="row">
-                        <div class="chart-title">
-                            Top 100 Words per POS
-                        </div>
-                        <div class="chart-stage pos-vocab-box">
-                            <div class="panel-group" id="pos-vocab" role="tablist" aria-multiselectable="true"></div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="chart-title">
-                            Concordance
-                        </div>
-                        <div class="chart-stage concordance-box">
-                            <div id="word-concordance"></div>
-                            <button type="clear" class="btn btn-default btn-block btn-primary start" disabled>Clear Concordance</button>
-                        </div>    
-                    </div>
+                <div class="chart-stage pos-vocab-box">
+                    <div class="panel-group" id="pos-vocab" role="tablist" aria-multiselectable="true"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="chart-title">
+                    Concordance
+                </div>
+                <div class="chart-stage concordance-box">
+                    <div id="word-concordance"></div>
+                    <button type="clear" class="btn btn-default btn-block btn-primary start" disabled>Clear Concordance</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="download-file-btns btn-toolbar">
+                    <button type="button" class="btn btn-default btn-xs pull-left" id="coordinate-btn">Download Coordinates</button>
+                    <button type="button" class="btn btn-default btn-xs pull-right" id="word-btn">Download Words</button>
                 </div>
             </div>
         </div>

@@ -24,6 +24,10 @@ class UploadForm(forms.Form):
     lang2DataFile = forms.FileField(
         label='Select second language data file'
     )
+    alignmentFile = forms.FileField(
+        label='Select previous annotations file',
+        required=False
+    )
 
 
 class UploadEmbeddingsForm(forms.Form):

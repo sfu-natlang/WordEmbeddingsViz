@@ -48,3 +48,7 @@ div.tooltip {
 .vocab-word-select {
     background-color: rgba(154, 151, 152, 0.50);
 }
+
+.download-file-btns {
+    margin: 10px;
+}

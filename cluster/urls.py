@@ -10,4 +10,5 @@ urlpatterns = patterns('',
                        url(r'^executeclustering', views.executeClustering, name='executeclustering'),
                        url(r'^getdata', views.getData, name='getdata'),
                        url(r'^upload-coordinates', views.uploadCoordinates, name='upload-coordinates'),
-                       url(r'^get-concordance', views.getLangConcordance, name='get-concordance'))
+                       url(r'^get-concordance', views.getLangConcordance, name='get-concordance'),
+                       url(r'^download', views.getDataForDownload, name='download'))

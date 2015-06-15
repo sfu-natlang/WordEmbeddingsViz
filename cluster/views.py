@@ -3,6 +3,7 @@ from django.shortcuts import render_to_response
 from django.template import RequestContext
 from django.http import HttpResponseRedirect
 from django.http import HttpResponse
+from django.core.servers.basehttp import FileWrapper
 from cluster.forms import UploadForm
 from cluster.forms import UploadEmbeddingsForm
 from WordEmbeddingsViz.settings import MEDIA_ROOT
@@ -39,6 +40,13 @@ def upload(request):
             lang2DataFile = request.FILES['lang2DataFile']
             saveUploadedFile(lang2DataFile, 'LANG2DATA', request.session.session_key)
 
+            if 'alignmentFile' in request.FILES:
+                alignmentFile = request.FILES['alignmentFile']
+                saveUploadedFile(alignmentFile, 'ALIGNMENTDATA', request.session.session_key)
+                request.session['align_avail'] = True
+            else:
+                request.session['align_avail'] = False
+
             request.session['is_pre_calc'] = False
             return HttpResponseRedirect('/cluster')
     else:
@@ -72,6 +80,8 @@ def uploadCoordinates(request):
                 alignmentFile = request.FILES['alignmentFile']
                 saveUploadedFile(alignmentFile, 'ALIGNMENTDATA', request.session.session_key)
                 request.session['align_avail'] = True
+            else:
+                request.session['align_avail'] = False
 
             request.session['is_pre_calc'] = True
             return HttpResponseRedirect('/cluster')
@@ -134,7 +144,6 @@ def getData(request):
         lang2AlignedWordData = {}
         if previousAlignmentData:
             print 'WE HAVE ALIGNMENTS'
-            print previousAlignmentData
             lang1AlignedWordList += previousAlignmentData.keys()
             lang2AlignedWordList += [word for val in previousAlignmentData.values() for word in val]
 
@@ -198,6 +207,29 @@ def getLangConcordance(request):
         jsonStr = json.dumps(result)
         return HttpResponse(jsonStr, content_type='application/javascript')
 
+
+def getDataForDownload(request):
+    print 'REQUESTING DATA FOR DOWNLOAD'
+    dataForDownload = request.GET['downloadName']
+
+    fileName = None
+    if dataForDownload == 'COORDINATES':
+        fileName = 'COORDINATE-DOWNLOAD.txt'
+        coordinates = request.session.get('coordinates', None)
+        if coordinates:
+            writeCoordinates(request.session.session_key, fileName, coordinates)
+
+    elif dataForDownload == 'WORDS':
+        fileName = 'WORDS-DOWNLOAD.txt'
+        words = request.session.get('words', None)
+        if words:
+            writeWords(request.session.session_key, fileName, words)
+
+    filename = MEDIA_ROOT+'/'+request.session.session_key+'/'+fileName
+    wrapper = FileWrapper(file(filename))
+    response = HttpResponse(wrapper)
+    response['Content-Disposition'] = 'attachment; filename=%s' % fileName
+    return response
 
 class tsneThreadClass(threading.Thread):
     def __init__(self, threadId, sessionKey):
@@ -301,7 +333,7 @@ def readPreCalcWords(sessionKey):
                     prevLang = lineSplit[0].strip()
                     langNum += 1
                     langName = 'lang'+str(langNum)
-                result.append((langName, lineSplit[1].strip()))
+                result.append((langName, lineSplit[1].decode('utf-8-sig').strip()))
     return result
 
 
@@ -319,6 +351,28 @@ def readPreCalcCoordinates(sessionKey):
                 lineSplit = line.split()
                 result.append([float(lineSplit[0].strip()), float(lineSplit[1].strip())])
     return result
+
+
+def writeCoordinates(sessionKey, fileName, coordinates):
+    print 'WRITING COORDINATES'
+    folderName = MEDIA_ROOT+'/'+sessionKey+'/'
+    if not os.path.exists(folderName):
+        return None
+
+    with open(folderName+fileName, 'w') as outFile:
+        for coordinate in coordinates:
+            outFile.write('{}\t{}\n'.format(coordinate[0], coordinate[1]))
+
+
+def writeWords(sessionKey, fileName, words):
+    print 'WRITING WORDS'
+    folderName = MEDIA_ROOT+'/'+sessionKey+'/'
+    if not os.path.exists(folderName):
+        return None
+
+    with open(folderName+fileName, 'w') as outFile:
+        for (lang, word) in words:
+            outFile.write('{}\t{}\n'.format(lang, word.encode('utf-8-sig')))
 
 
 def loadLangConcordance(fileName, isPOSAvail, sessionKey):

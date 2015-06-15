@@ -357,7 +357,6 @@ function renderData(jsonData, tooltipURL) {
 
             function createPreviousAlignment() {
                 alignmentEnabled = true;
-                console.log(jsonData.previousAlignments);
                 for (var index in jsonData.previousAlignments) {
                     var alignmentArray = jsonData.previousAlignments[index];
                     for (var i in alignmentArray) {
@@ -375,7 +374,6 @@ function renderData(jsonData, tooltipURL) {
                         paramObj.value = [];
                         paramObj.value.push(word.x);
                         paramObj.value.push(word.y);
-                        console.log(paramObj);
 
                         createAlignment(paramObj);
                     }
