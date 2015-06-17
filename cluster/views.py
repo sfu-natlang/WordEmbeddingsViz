@@ -375,7 +375,7 @@ def writeWords(sessionKey, fileName, words):
             outFile.write('{}\t{}\n'.format(lang, word.encode('utf-8-sig')))
 
 
-def loadLangConcordance(fileName, isPOSAvail, sessionKey):
+def loadLangConcordance(fileName, isPOSAvail, sessionKey, lines=25):
     """
     The functionality of this function has been copied over from
     NLTK ConcordanceIndex.
@@ -428,7 +428,8 @@ def loadLangConcordance(fileName, isPOSAvail, sessionKey):
                     # elif pos == '.':
                     #     pos = 'DOT'
                     tokens.append(token.lower())
-                    offsets[token.lower()].append(tokenIndex)
+                    if len(offsets[token.lower()]) <= lines:
+                        offsets[token.lower()].append(tokenIndex)
                     tokenIndex += 1
                     if pos:
                         vocabPOS[token.lower()] = pos
@@ -438,18 +439,18 @@ def loadLangConcordance(fileName, isPOSAvail, sessionKey):
             print len(vocabCount)
         else:
             result = ''
+            tokenIndex = 0
             for index, line in enumerate(inFile):
                 if index%10000 == 0:
                     print index
                 line = line.strip('\r\n').strip()
                 if line:
-                    result += line + ' '
-
-            print 'TOKENIZING & CREATING OFFSETS'
-            tokens = word_tokenize(result.decode('utf8').lower())
-            offsets = defaultdict(list)
-            for index, word in enumerate(tokens):
-                offsets[word.lower()].append(index)
+                    lineSplit = line.split(' ')
+                    for token in lineSplit:
+                        tokens.append(token)
+                        if len(offsets[token.lower()]) <= lines:
+                            offsets[token.lower()].append(tokenIndex)
+                        tokenIndex += 1
 
     print len(tokens)
     print len(offsets)
