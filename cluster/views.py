@@ -100,8 +100,8 @@ def cluster(request):
 def executeClustering(request):
     isPreCalc = request.session.get('is_pre_calc', False)
     request.session['lang1Concordance'], request.session['vocabPOS'], request.session['vocabCount'] = \
-        loadLangConcordance('LANG1DATA', True, request.session.session_key)
-    request.session['lang2Concordance'] = loadLangConcordance('LANG2DATA', False, request.session.session_key)
+        loadLangConcordance('LANG1DATA', True, request.session.session_key, 25)
+    request.session['lang2Concordance'] = loadLangConcordance('LANG2DATA', False, request.session.session_key, 25)
 
     if request.session.get('align_avail', False):
         request.session['previousAlignments'] = loadPreviousAlignments('ALIGNMENTDATA', request.session.session_key)
@@ -147,7 +147,7 @@ def getData(request):
             lang1AlignedWordList += previousAlignmentData.keys()
             lang2AlignedWordList += [word for val in previousAlignmentData.values() for word in val]
 
-
+        print 'DONE READING'
         data = {}
         result = {}
         posVocab = defaultdict(list)
@@ -196,12 +196,11 @@ def getLangConcordance(request):
         language = request.POST.get('language')
 
         if language == 'LANG1':
-            concordanceIndex = request.session['lang1Concordance']
+            langConcordance = request.session['lang1Concordance']
         elif language == 'LANG2':
-            concordanceIndex = request.session['lang2Concordance']
+            langConcordance = request.session['lang2Concordance']
 
-        concordance = getConcordance(word, concordanceIndex['tokens'], concordanceIndex['offsets'])
-        print concordance
+        concordance = getConcordance(word, langConcordance, language)
 
         result = {'concordance': concordance}
         jsonStr = json.dumps(result)
@@ -230,6 +229,7 @@ def getDataForDownload(request):
     response = HttpResponse(wrapper)
     response['Content-Disposition'] = 'attachment; filename=%s' % fileName
     return response
+
 
 class tsneThreadClass(threading.Thread):
     def __init__(self, threadId, sessionKey):
@@ -376,128 +376,101 @@ def writeWords(sessionKey, fileName, words):
 
 
 def loadLangConcordance(fileName, isPOSAvail, sessionKey, lines=25):
-    """
-    The functionality of this function has been copied over from
-    NLTK ConcordanceIndex.
-    """
     print 'READING CONCONDANCE - ' + fileName
     folderName = MEDIA_ROOT+'/'+sessionKey+'/'
     if not os.path.exists(folderName):
         return None
 
-
-    tokens = []
-    offsets = defaultdict(list)
+    tokenLinesSet = defaultdict(set)
+    vocabPOS = {}
+    vocabCount = defaultdict(int)
 
     with open(folderName+fileName) as inFile:
-        if isPOSAvail:
-            vocabPOS = {}
-            vocabCount = defaultdict(int)
-            tokenIndex = 0
-            for index, line in enumerate(inFile):
-                if (index%10000) == 0:
-                    print index
-                line = line.strip('\r\n').strip()
+        for index, line in enumerate(inFile):
+            if index % 10000 == 0:
+                print index
+
+            line = line.strip('\r\n').strip()
+            if line:
                 lineSplit = line.split(' ')
-                for tokenPOS in lineSplit:
-                    tokenPOSSplit = tokenPOS.strip().split('_', 1)
-                    if tokenPOSSplit[0] == '' and tokenPOSSplit[1].startswith('_'):
-                        token = tokenPOSSplit[1][:-2]
-                        pos = tokenPOSSplit[1][-2:]
-                    elif not(tokenPOSSplit[0] == ''):
-                        token = tokenPOSSplit[0]
-                        pos = tokenPOSSplit[1]
-                    if pos.startswith('NN'):
-                        pos = 'NN'
-                    elif pos.startswith('JJ'):
-                        pos = 'JJ'
-                    elif pos.startswith('RB'):
-                        pos = 'RB'
-                    elif pos.startswith('VB'):
-                        pos = 'VB'
-                    else:
+                for token in lineSplit:
+                    if isPOSAvail:
+                        tokenPOSSplit = token.split('_', 1)
                         pos = None
-                    # elif pos == 'PRP$':
-                    #     pos = 'PRP'
-                    # elif pos == ',':
-                    #     pos = 'COMMA'
-                    # elif pos == ':':
-                    #     pos = 'COLON'
-                    # elif pos == '$':
-                    #     pos = 'DOLLAR'
-                    # elif pos == '.':
-                    #     pos = 'DOT'
-                    tokens.append(token.lower())
-                    if len(offsets[token.lower()]) <= lines:
-                        offsets[token.lower()].append(tokenIndex)
-                    tokenIndex += 1
-                    if pos:
-                        vocabPOS[token.lower()] = pos
-                        vocabCount[token.lower()] += 1
+                        if tokenPOSSplit[0] == '' and tokenPOSSplit[1].startswith('_'):
+                            token = tokenPOSSplit[1][:-2]
+                            pos = tokenPOSSplit[1][-2:]
+                        elif not(tokenPOSSplit[0] == ''):
+                            token = tokenPOSSplit[0]
+                            pos = tokenPOSSplit[1]
 
-            print len(vocabPOS)
-            print len(vocabCount)
-        else:
-            result = ''
-            tokenIndex = 0
-            for index, line in enumerate(inFile):
-                if index%10000 == 0:
-                    print index
-                line = line.strip('\r\n').strip()
-                if line:
-                    lineSplit = line.split(' ')
-                    for token in lineSplit:
-                        tokens.append(token)
-                        if len(offsets[token.lower()]) <= lines:
-                            offsets[token.lower()].append(tokenIndex)
-                        tokenIndex += 1
+                        if pos.startswith('NN'):
+                            pos = 'NN'
+                        elif pos.startswith('JJ'):
+                            pos = 'JJ'
+                        elif pos.startswith('RB'):
+                            pos = 'RB'
+                        elif pos.startswith('VB'):
+                            pos = 'VB'
+                        else:
+                            pos = None
+                        # elif pos == 'PRP$':
+                        #     pos = 'PRP'
+                        # elif pos == ',':
+                        #     pos = 'COMMA'
+                        # elif pos == ':':
+                        #     pos = 'COLON'
+                        # elif pos == '$':
+                        #     pos = 'DOLLAR'
+                        # elif pos == '.':
+                        #     pos = 'DOT'
+                        if pos:
+                            vocabPOS[token.lower()] = pos
+                            vocabCount[token.lower()] += 1
 
-    print len(tokens)
-    print len(offsets)
-    print 'RETURNING FROM LOAD CONCORDANCE'
+                    if len(tokenLinesSet[token.lower()]) <= lines:
+                        tokenLinesSet[token.lower()].add(line)
+
+    tokenLines = {}
+    for token, lines in tokenLinesSet.iteritems():
+        tokenLines[token] = list(lines)
 
     if isPOSAvail:
-        return {'tokens': tokens, 'offsets': offsets}, vocabPOS, vocabCount
+        return tokenLines, vocabPOS, vocabCount
     else:
-        return {'tokens': tokens, 'offsets': offsets}
+        return tokenLines
 
 
-def getConcordance(word, tokens, offsets, width=75, lines=25):
-    """
-    This function is copied from print_concordance function in NLTK
-    """
-
-    word = word.encode('utf-8').decode('utf-8')
-
-    half_width = (width - len(word) - 2) // 2
-    context = width // 4 # approx number of words of context
-
-    offsets = getOffsets(offsets, word)
-
+def cleanLinesOfPOS(lines):
     result = []
-    if offsets:
-        lines = min(lines, len(offsets))
-        for i in offsets:
-            if lines <= 0:
-                break
-            left = (' ' * half_width +
-                    ' '.join(tokens[i-context:i]))
-            right = ' '.join(tokens[i+1:i+context])
-            left = left[-half_width:]
-            right = right[:half_width]
-            result.append(left.strip() + ' ' + tokens[i].strip() + ' ' + right.strip())
-            lines -= 1
+    for line in lines:
+        lineSplit = line.split()
+        newLine = ''
+        for tokenPOS in lineSplit:
+            tokenPOSSplit = tokenPOS.split('_', 1)
+            token = ''
+            if tokenPOSSplit[0] == '' and tokenPOSSplit[1].startswith('_'):
+                token = tokenPOSSplit[1][:-2]
+            elif not(tokenPOSSplit[0] == ''):
+                token = tokenPOSSplit[0]
+            newLine += '{} '.format(token)
+        result.append(newLine.strip())
     return result
 
 
-def getOffsets(offsets, word):
-    if word.lower() in offsets:
-        return offsets[word.lower()]
+def getConcordance(word, tokenLines, language):
+    word = word.encode('utf-8').decode('utf-8')
+    if word.lower() in tokenLines:
+        lines = tokenLines[word.lower()]
+        if language == 'LANG1':
+            lines = cleanLinesOfPOS(lines)
+        return lines
     else:
         return []
 
 
 def filterVocabByCount(vocabCount, vocabPOS, numPerPOS):
+    print 'FILTERING VOCAB BY COUNT'
     sortedVocabCount = sorted(vocabCount.items(), key=operator.itemgetter(1), reverse=True)
     countOfEachPOS = defaultdict(int)
     result = {}
