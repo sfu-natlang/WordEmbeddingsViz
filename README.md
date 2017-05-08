@@ -2,7 +2,7 @@ Visualize Word Embeddings using t-SNE
 =====================================
 
 After cloning execute the following inside the root folder of the project.
-##Initial Commands:
+## Initial Commands:
 If Django (v1.7.1) is not installed, then install using
 
     pip install Django==1.7.1
@@ -15,6 +15,6 @@ Then execute the following:
     python manage.py migrate
     python manage.py syncdb
 
-##Run Server:
+## Run Server:
 
     python manage.py runserver
